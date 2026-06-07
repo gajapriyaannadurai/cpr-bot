@@ -75,14 +75,33 @@ def chartink_scan():
     if not csrf:
         snippet = html[:1000]
         raise RuntimeError(f"Could not get CSRF token. HTML snippet:\n{snippet}")
-    clause = ""
-    for pat in [r'"scan_clause"\s*:\s*"([^"]+)"',
-                r"'scan_clause'\s*:\s*'([^']+)'",
-                r'name=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']']:
-        m = re.search(pat, html)
+   clause = ""
+    patterns = [
+        r'"scan_clause"\s*:\s*"((?:[^"\\]|\\.)+)"',
+        r"'scan_clause'\s*:\s*'((?:[^'\\]|\\.)+)'",
+        r'name=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
+        r'value=["\']([^"\']+)["\'][^>]*name=["\']scan_clause["\']',
+        r'id=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
+        r'<textarea[^>]*scan_clause[^>]*>([^<]+)</textarea>',
+        r'data-scan-clause=["\']([^"\']+)["\']',
+        r'scan_clause\s*=\s*["\']((?:[^"\'\\]|\\.)+)["\']',
+        r'clause["\']?\s*:\s*["\']((?:[^"\'\\]|\\.){20,})["\']',
+    ]
+    for i, pat in enumerate(patterns):
+        m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
         if m:
-            clause = m.group(1); print(f"[scan] clause found"); break
+            clause = m.group(1).replace('\\"', '"').replace("\\'", "'").replace('\\\\', '\\')
+            print(f"[scan] clause found via pattern #{i}, len={len(clause)}")
+            print(f"[scan] clause preview: {clause[:200]}")
+            break
     if not clause:
+        # Debug: dump all occurrences of 'clause' in HTML to logs + telegram
+        snippets = []
+        for m in re.finditer(r'.{0,100}clause.{0,200}', html, re.IGNORECASE):
+            snippets.append(m.group(0))
+        debug = "\n---\n".join(snippets[:5]) if snippets else "no 'clause' word found in HTML"
+        print(f"[scan] DEBUG snippets around 'clause':\n{debug}")
+        send_tg(f"⚠️ <b>scan_clause not found</b>\n\nHTML snippets containing 'clause':\n\n<code>{debug[:2000]}</code>")
         raise RuntimeError("Could not get scan_clause from page")
     print(f"[scan] csrf len={len(csrf)} clause len={len(clause)}")
     r = s.post(SCAN_URL, data={"scan_clause": clause},
