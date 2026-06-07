@@ -50,17 +50,36 @@ HINDCOPPER SBFC HFCL KPRMILL FIVESTAR THERMAX KAJARIACER MEDPLUS
 """.split()
 
 
+def _chat_ids():
+    return [c.strip() for c in TG_CHAT.split(",") if c.strip()]
+
+
 def send_tg_text(text):
-    requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-        data={"chat_id": TG_CHAT, "text": text, "parse_mode": "HTML"}, timeout=15)
+    for chat_id in _chat_ids():
+        try:
+            requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+                data={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}, timeout=15)
+        except Exception as e:
+            print(f"[tg] text error for {chat_id}: {e}")
 
 
 def send_tg_photo(image_bytes, caption):
-    r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
-        data={"chat_id": TG_CHAT, "caption": caption, "parse_mode": "HTML"},
-        files={"photo": ("inside_cpr.png", image_bytes, "image/png")}, timeout=30)
-    if r.ok: print("[tg] photo sent"); return True
-    print(f"[tg] error {r.status_code}: {r.text[:200]}"); return False
+    image_bytes_data = image_bytes.read()
+    sent_to = 0
+    for chat_id in _chat_ids():
+        try:
+            r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
+                data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
+                files={"photo": ("inside_cpr.png", image_bytes_data, "image/png")},
+                timeout=30)
+            if r.ok:
+                sent_to += 1
+                print(f"[tg] photo sent to {chat_id}")
+            else:
+                print(f"[tg] error for {chat_id}: {r.status_code} {r.text[:200]}")
+        except Exception as e:
+            print(f"[tg] photo error for {chat_id}: {e}")
+    return sent_to > 0
 
 
 def calc_cpr(h, l, c):
