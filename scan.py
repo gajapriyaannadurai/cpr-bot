@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — Tomorrow's CPR is inside Today's CPR."""
-import os, sys, datetime, requests
+"""Inside CPR Scanner — sends a poster image to Telegram."""
+import os, sys, io, datetime, requests
 import yfinance as yf
 import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
 
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -34,148 +35,208 @@ HINDCOPPER SBFC HFCL KPRMILL FIVESTAR THERMAX KAJARIACER MEDPLUS
 """.split()
 
 
-def send_tg(text):
-    if not (TG_TOKEN and TG_CHAT):
-        print("[tg] missing creds"); return False
-    for chunk in [text[i:i+3800] for i in range(0, len(text), 3800)]:
-        try:
-            r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-                data={"chat_id": TG_CHAT, "text": chunk, "parse_mode": "HTML",
-                      "disable_web_page_preview": "true"}, timeout=15)
-            if not r.ok:
-                print(f"[tg] error {r.status_code}: {r.text[:200]}"); return False
-        except Exception as e:
-            print(f"[tg] exception: {e}"); return False
-    print("[tg] sent ok"); return True
+def send_tg_text(text):
+    requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+        data={"chat_id": TG_CHAT, "text": text, "parse_mode": "HTML"}, timeout=15)
+
+
+def send_tg_photo(image_bytes, caption):
+    r = requests.post(
+        f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
+        data={"chat_id": TG_CHAT, "caption": caption, "parse_mode": "HTML"},
+        files={"photo": ("inside_cpr.png", image_bytes, "image/png")},
+        timeout=30)
+    if r.ok:
+        print("[tg] photo sent ok")
+        return True
+    print(f"[tg] photo error {r.status_code}: {r.text[:200]}")
+    return False
 
 
 def calc_cpr(h, l, c):
-    """Returns CPR with handling for inverted case."""
     pp = (h + l + c) / 3
     bc = (h + l) / 2
     tc = 2 * pp - bc
-    return {
-        "pp": pp,
-        "tc_raw": tc, "bc_raw": bc,
-        "upper": max(tc, bc),   # CPR top
-        "lower": min(tc, bc),   # CPR bottom
-        "width": abs(tc - bc),
-    }
+    return {"upper": max(tc, bc), "lower": min(tc, bc), "width": abs(tc - bc)}
 
 
-def fmt_vol(v):
-    if v >= 1e7: return f"{v/1e7:.2f}Cr"
-    if v >= 1e5: return f"{v/1e5:.2f}L"
-    return f"{int(v)}"
+def get_font(size):
+    """Try to load a clean bold font, fall back to default."""
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default()
+
+
+def make_poster(stocks, target_date):
+    """Render a poster image like the user's reference."""
+    n = len(stocks)
+    # 2 columns layout when more than 6 stocks
+    use_two_col = n > 6
+    rows = (n + 1) // 2 if use_two_col else n
+
+    W = 1080
+    pad = 60
+    title_h = 220
+    table_top = title_h + 60
+    row_h = 90
+    table_h = (rows + 1) * row_h
+    footer_h = 100
+    H = table_top + table_h + footer_h + pad
+
+    img = Image.new("RGB", (W, H), "white")
+    d = ImageDraw.Draw(img)
+
+    # ── Title ──
+    f_title = get_font(58)
+    f_subtitle = get_font(48)
+    title_line1 = target_date
+    title_line2 = "INSIDE CPR STOCKS"
+
+    bbox = d.textbbox((0, 0), title_line1, font=f_title)
+    w1 = bbox[2] - bbox[0]
+    d.text(((W - w1) / 2, 80), title_line1, fill="black", font=f_title)
+
+    bbox = d.textbbox((0, 0), title_line2, font=f_subtitle)
+    w2 = bbox[2] - bbox[0]
+    d.text(((W - w2) / 2, 160), title_line2, fill="black", font=f_subtitle)
+
+    # ── Table ──
+    f_head = get_font(36)
+    f_cell = get_font(36)
+
+    if use_two_col:
+        col_widths = [120, (W - 2 * pad - 120) / 2, (W - 2 * pad - 120) / 2]
+        x_cols = [pad, pad + col_widths[0], pad + col_widths[0] + col_widths[1]]
+        headers = ["S.NO", "STOCKS", ""]
+    else:
+        col_widths = [200, W - 2 * pad - 200]
+        x_cols = [pad, pad + col_widths[0]]
+        headers = ["S.NO", "STOCKS"]
+
+    y = table_top
+    # header row
+    for i, h_text in enumerate(headers):
+        x = x_cols[i]
+        cw = col_widths[i] if i < len(col_widths) else col_widths[-1]
+        d.rectangle([x, y, x + cw, y + row_h], outline="black", width=3)
+        if h_text:
+            bbox = d.textbbox((0, 0), h_text, font=f_head)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            d.text((x + (cw - tw) / 2, y + (row_h - th) / 2 - 5), h_text, fill="black", font=f_head)
+
+    y += row_h
+
+    # data rows
+    if use_two_col:
+        left = stocks[:rows]
+        right = stocks[rows:]
+        for i in range(rows):
+            # S.No cell
+            d.rectangle([x_cols[0], y, x_cols[0] + col_widths[0], y + row_h], outline="black", width=3)
+            sno_text = f"{i+1}."
+            bbox = d.textbbox((0, 0), sno_text, font=f_cell)
+            tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
+            d.text((x_cols[0] + (col_widths[0] - tw) / 2, y + (row_h - th) / 2 - 5), sno_text, fill="black", font=f_cell)
+            # Left column
+            d.rectangle([x_cols[1], y, x_cols[1] + col_widths[1], y + row_h], outline="black", width=3)
+            sym_l = left[i] if i < len(left) else ""
+            if sym_l:
+                d.text((x_cols[1] + 30, y + (row_h - 40) / 2), sym_l, fill="black", font=f_cell)
+            # Right column
+            d.rectangle([x_cols[2], y, x_cols[2] + col_widths[2], y + row_h], outline="black", width=3)
+            sym_r = right[i] if i < len(right) else ""
+            if sym_r:
+                d.text((x_cols[2] + 30, y + (row_h - 40) / 2), sym_r, fill="black", font=f_cell)
+            y += row_h
+    else:
+        for i, sym in enumerate(stocks):
+            d.rectangle([x_cols[0], y, x_cols[0] + col_widths[0], y + row_h], outline="black", width=3)
+            sno_text = f"{i+1}."
+            bbox = d.textbbox((0, 0), sno_text, font=f_cell)
+            tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
+            d.text((x_cols[0] + (col_widths[0] - tw) / 2, y + (row_h - th) / 2 - 5), sno_text, fill="black", font=f_cell)
+            d.rectangle([x_cols[1], y, x_cols[1] + col_widths[1], y + row_h], outline="black", width=3)
+            d.text((x_cols[1] + 30, y + (row_h - 40) / 2), sym, fill="black", font=f_cell)
+            y += row_h
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    buf.seek(0)
+    return buf
 
 
 def main():
-    print("Starting yfinance scan...")
+    print("Starting scan...")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
-    scanned_at = ist.strftime("%a, %d %b %Y  %I:%M %p IST")
-    print(f"Time: {scanned_at}")
-    print(f"Universe: {len(STOCKS)} stocks")
+    print(f"Time: {ist.strftime('%a %d %b %Y %I:%M %p IST')}")
 
     tickers = [f"{s}.NS" for s in STOCKS]
-    print("Downloading 10 days of data...")
-
+    print(f"Downloading {len(tickers)} tickers...")
     try:
         df = yf.download(tickers, period="10d", group_by='ticker',
                          auto_adjust=False, progress=False, threads=True, timeout=90)
     except Exception as e:
-        err = f"yfinance error\n{scanned_at}\n\n{str(e)[:500]}"
-        print(err); send_tg(err); sys.exit(1)
-
-    if df is None or df.empty:
-        send_tg(f"Scanner Error: empty yfinance data\n{scanned_at}")
+        send_tg_text(f"yfinance error: {e}")
         sys.exit(1)
 
-    print(f"Data shape: {df.shape}")
-    print("Processing...")
+    if df is None or df.empty:
+        send_tg_text("yfinance returned empty data")
+        sys.exit(1)
 
+    print("Processing...")
     inside = []
-    no_data = 0
-    not_inside = 0
-    today_label = None
     tomorrow_label = None
 
     for sym in STOCKS:
         ts = f"{sym}.NS"
         try:
             if ts not in df.columns.get_level_values(0):
-                no_data += 1; continue
+                continue
             stock_df = df[ts].dropna(how='any')
             if len(stock_df) < 2:
-                no_data += 1; continue
+                continue
 
-            # day_today = most recent trading day (the day just closed at 4 PM)
-            # day_yday  = the day before that
             day_today = stock_df.iloc[-1]
             day_yday  = stock_df.iloc[-2]
 
-            if today_label is None:
+            if tomorrow_label is None:
                 d_today = stock_df.index[-1]
-                today_label = d_today.strftime("%a %d %b %Y")
-                # Next trading day = today + 1 business day (skip weekends)
                 d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
-                tomorrow_label = d_tomorrow.strftime("%a %d %b %Y")
-                print(f"Today (data day): {today_label}")
-                print(f"Tomorrow (target): {tomorrow_label}")
+                tomorrow_label = d_tomorrow.strftime("%d-%m-%Y").upper()
+                print(f"Target: {tomorrow_label}")
 
-            # Today's CPR = calculated from YESTERDAY's H/L/C (was active during today)
-            today_cpr = calc_cpr(
-                float(day_yday['High']),
-                float(day_yday['Low']),
-                float(day_yday['Close']))
+            today_cpr = calc_cpr(float(day_yday['High']), float(day_yday['Low']), float(day_yday['Close']))
+            tomorrow_cpr = calc_cpr(float(day_today['High']), float(day_today['Low']), float(day_today['Close']))
 
-            # Tomorrow's CPR = calculated from TODAY's H/L/C (will be active tomorrow)
-            tomorrow_cpr = calc_cpr(
-                float(day_today['High']),
-                float(day_today['Low']),
-                float(day_today['Close']))
-
-            # Inside CPR: tomorrow's CPR is fully inside today's CPR
-            is_inside = (tomorrow_cpr['upper'] <= today_cpr['upper'] and
-                         tomorrow_cpr['lower'] >= today_cpr['lower'])
-
-            if is_inside:
+            # Tomorrow's CPR is fully inside Today's CPR
+            if (tomorrow_cpr['upper'] <= today_cpr['upper'] and
+                tomorrow_cpr['lower'] >= today_cpr['lower']):
                 w_pct = (tomorrow_cpr['width'] / float(day_today['Close'])) * 100
-                inside.append({
-                    'sym': sym,
-                    'c': float(day_today['Close']),
-                    'v': float(day_today['Volume']),
-                    'tom_upper': tomorrow_cpr['upper'],
-                    'tom_lower': tomorrow_cpr['lower'],
-                    'tod_upper': today_cpr['upper'],
-                    'tod_lower': today_cpr['lower'],
-                    'w_pct': w_pct,
-                })
-            else:
-                not_inside += 1
+                inside.append({'sym': sym, 'w_pct': w_pct})
         except Exception:
-            no_data += 1
             continue
 
-    inside.sort(key=lambda x: x['w_pct'])  # narrowest tomorrow CPR first
-    print(f"Inside CPR: {len(inside)}, Not inside: {not_inside}, No data: {no_data}")
+    inside.sort(key=lambda x: x['w_pct'])  # narrowest first
+    print(f"Found {len(inside)} inside CPR stocks")
 
     if not inside:
-        send_tg(f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n\nNo inside CPR stocks for {tomorrow_label}.")
+        send_tg_text(f"<b>Inside CPR Stock List</b>\nFor: {tomorrow_label}\n\nNo inside CPR stocks today.")
         return
 
-    head = (f"<b>📊 Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
-            f"For trading on: <b>{tomorrow_label}</b>\n"
-            f"Based on close of: {today_label}\n"
-            f"━━━━━━━━━━━━━━━━━━\n"
-            f"Tomorrow's CPR inside Today's CPR: <b>{len(inside)}</b> stocks\n"
-            f"Sorted by narrowest CPR first\n"
-            f"━━━━━━━━━━━━━━━━━━\n\n"
-            f"<code> S.No  Symbol         Volume</code>\n")
-    lines = [f"<code>{i:>4}. {s['sym']:<14} {fmt_vol(s['v']):>10}</code>" for i, s in enumerate(inside, 1)]
-    msg = head + "\n".join(lines)
+    syms = [s['sym'] for s in inside]
+    print(f"Stocks: {syms}")
 
-    if send_tg(msg):
-        print("✅ Sent successfully")
+    img_buf = make_poster(syms, tomorrow_label)
+    caption = f"<b>Inside CPR Stock List</b>\nFor next trading session: <b>{tomorrow_label}</b>\nTotal: {len(syms)} stocks"
+    send_tg_photo(img_buf, caption)
 
 
 if __name__ == "__main__":
