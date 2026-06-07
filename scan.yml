@@ -1,0 +1,40 @@
+name: Inside CPR Scanner
+
+on:
+  # Run at 10:30 UTC = 4:00 PM IST, Monday–Friday
+  schedule:
+    - cron: '30 10 * * 1-5'
+  # Allow manual trigger from Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests cloudscraper
+
+      - name: Run scanner
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/scan.py
+
+      - name: Commit history snapshot
+        run: |
+          git config user.name  "CPR Bot"
+          git config user.email "cpr-bot@github-actions"
+          git add history/ || true
+          git diff --staged --quiet || git commit -m "Scan $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push || true
