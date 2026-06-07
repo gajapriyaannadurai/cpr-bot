@@ -11,7 +11,7 @@ TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 # Brand customisation
 BRAND_NAME    = "STARK SCHOOL OF FINANCE"
 BRAND_FOOTER  = "www.tradingwithgp.com"   # set to "" to hide
-LOGO_FILE     = "logo.png"
+LOGO_FILE     = "logo (Logo).png"
 
 # Brand colors (from logo)
 NAVY      = (26, 40, 71)
