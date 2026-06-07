@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — robust version."""
+"""Inside CPR Scanner."""
 import os, re, sys, datetime, time, requests
 
 try:
@@ -13,10 +13,13 @@ SCAN_URL = "https://chartink.com/screener/scan_results"
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 
+# Hardcoded clause since Chartink loads scan_clause via JS for user-saved screeners
+SCAN_CLAUSE = "( {cash} ( latest close > [latest cpr bottom] and latest close < [latest cpr top] ) )"
+
 
 def send_tg(text):
     if not (TG_TOKEN and TG_CHAT):
-        print(f"[tg] missing creds")
+        print("[tg] missing creds")
         return False
     for chunk in [text[i:i+3800] for i in range(0, len(text), 3800)]:
         try:
@@ -59,7 +62,7 @@ def chartink_scan():
         print(f"[scan] homepage error: {e}")
     time.sleep(1)
     r = s.get(SCREENER_URL, timeout=30)
-    print(f"[scan] screener status: {r.status_code}, len: {len(r.text)}")
+    print(f"[scan] screener status: {r.status_code}")
     if r.status_code != 200:
         raise RuntimeError(f"Screener returned {r.status_code}")
     html = r.text
@@ -75,34 +78,8 @@ def chartink_scan():
     if not csrf:
         raise RuntimeError("Could not get CSRF token")
 
-    clause = ""
-    patterns = [
-        r'"scan_clause"\s*:\s*"((?:[^"\\]|\\.)+)"',
-        r'name=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
-        r'value=["\']([^"\']+)["\'][^>]*name=["\']scan_clause["\']',
-        r'id=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
-        r'<textarea[^>]*scan_clause[^>]*>([^<]+)</textarea>',
-        r'data-scan-clause=["\']([^"\']+)["\']',
-        r'scan_clause\s*=\s*["\']((?:[^"\'\\]|\\.)+)["\']',
-    ]
-    for i, pat in enumerate(patterns):
-        m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
-        if m:
-            clause = m.group(1).replace('\\"', '"').replace("\\'", "'").replace('\\\\', '\\')
-            print(f"[scan] clause found via pattern #{i}, len={len(clause)}")
-            print(f"[scan] clause preview: {clause[:200]}")
-            break
-
-    if not clause:
-        snippets = []
-        for m in re.finditer(r'.{0,80}clause.{0,200}', html, re.IGNORECASE):
-            snippets.append(m.group(0))
-        debug = "\n---\n".join(snippets[:5]) if snippets else "no clause word found"
-        print(f"[scan] DEBUG:\n{debug}")
-        send_tg(f"⚠️ scan_clause not found\n\nSnippets:\n\n{debug[:2000]}")
-        raise RuntimeError("Could not get scan_clause")
-
-    r = s.post(SCAN_URL, data={"scan_clause": clause},
+    print(f"[scan] using clause: {SCAN_CLAUSE}")
+    r = s.post(SCAN_URL, data={"scan_clause": SCAN_CLAUSE},
                headers={"X-Requested-With": "XMLHttpRequest",
                         "X-CSRF-Token": csrf,
                         "Referer": SCREENER_URL,
@@ -111,6 +88,8 @@ def chartink_scan():
                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
                timeout=30)
     print(f"[scan] scan_results status: {r.status_code}")
+    if not r.ok:
+        print(f"[scan] response body: {r.text[:500]}")
     r.raise_for_status()
     return r.json()
 
@@ -173,20 +152,21 @@ def format_msg(enriched, scanned_at, total):
     inside = [d for d in enriched if d["inside"]]
     good = [d for d in inside if d["quality"] == "Good"]
     fair = [d for d in inside if d["quality"] == "Fair"]
-    head = (f"<b>📊 Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
-            f"━━━━━━━━━━━━━━━━━━\n📈 Scanned: {total}\n"
-            f"✅ Inside CPR: {len(inside)}\n🟢 Good: {len(good)}\n🟡 Fair: {len(fair)}\n"
-            f"━━━━━━━━━━━━━━━━━━\n")
+    head = (f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
+            f"-------------------------\n"
+            f"Scanned: {total}\nInside CPR: {len(inside)}\n"
+            f"Good: {len(good)}  Fair: {len(fair)}\n"
+            f"-------------------------\n")
 
-    def block(label, items, emoji):
+    def block(label, items):
         if not items:
             return ""
-        lines = [f"\n<b>{emoji} {label}</b>"]
+        lines = [f"\n<b>{label}</b>"]
         for d in items[:25]:
-            lines.append(f"\n<b>{d['sym']}</b> ₹{d['c']:.2f} {d['chg']:+.2f}%\n"
+            lines.append(f"\n<b>{d['sym']}</b> Rs {d['c']:.2f} ({d['chg']:+.2f}%)\n"
                          f"  CPR: {d['w_cls']} ({d['w_pct']:.3f}%)\n"
-                         f"  TC ₹{d['pv']['tc']:.2f} | BC ₹{d['pv']['bc']:.2f}\n"
-                         f"  R1 ₹{d['pv']['r1']:.2f} | S1 ₹{d['pv']['s1']:.2f}\n"
+                         f"  TC {d['pv']['tc']:.2f} BC {d['pv']['bc']:.2f}\n"
+                         f"  R1 {d['pv']['r1']:.2f} S1 {d['pv']['s1']:.2f}\n"
                          f"  In CPR: <b>{d['pct_in']}%</b>")
         if len(items) > 25:
             lines.append(f"\n<i>... {len(items)-25} more</i>")
@@ -194,11 +174,11 @@ def format_msg(enriched, scanned_at, total):
 
     if not inside:
         return head + "\n<i>No inside CPR stocks today.</i>"
-    return head + block("GOOD SETUPS", good, "🟢") + block("FAIR SETUPS", fair, "🟡")
+    return head + block("GOOD SETUPS", good) + block("FAIR SETUPS", fair)
 
 
 def main():
-    print("Inside CPR Scanner starting...")
+    print("Starting...")
     print(f"Telegram: token={'yes' if TG_TOKEN else 'NO'} chat={'yes' if TG_CHAT else 'NO'}")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
     scanned_at = ist.strftime("%a, %d %b %Y  %I:%M %p IST")
@@ -213,7 +193,7 @@ def main():
     rows = raw.get("data") or raw.get("stocks") or raw.get("result") or []
     print(f"Got {len(rows)} rows")
     if not rows:
-        send_tg(f"Scanner ran but returned 0 stocks\n{scanned_at}")
+        send_tg(f"Scanner ran. 0 stocks today.\n{scanned_at}")
         return
     enriched = enrich(rows)
     msg = format_msg(enriched, scanned_at, len(rows))
