@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — proper logic using previous trading day for CPR."""
+"""Inside CPR Scanner — Tomorrow's CPR is inside Today's CPR."""
 import os, sys, datetime, requests
 import yfinance as yf
 import pandas as pd
@@ -50,10 +50,17 @@ def send_tg(text):
 
 
 def calc_cpr(h, l, c):
+    """Returns CPR with handling for inverted case."""
     pp = (h + l + c) / 3
     bc = (h + l) / 2
     tc = 2 * pp - bc
-    return {"pp": pp, "bc": bc, "tc": tc, "upper": max(tc, bc), "lower": min(tc, bc)}
+    return {
+        "pp": pp,
+        "tc_raw": tc, "bc_raw": bc,
+        "upper": max(tc, bc),   # CPR top
+        "lower": min(tc, bc),   # CPR bottom
+        "width": abs(tc - bc),
+    }
 
 
 def fmt_vol(v):
@@ -70,7 +77,7 @@ def main():
     print(f"Universe: {len(STOCKS)} stocks")
 
     tickers = [f"{s}.NS" for s in STOCKS]
-    print("Downloading 10 days of data from Yahoo Finance...")
+    print("Downloading 10 days of data...")
 
     try:
         df = yf.download(tickers, period="10d", group_by='ticker',
@@ -80,7 +87,7 @@ def main():
         print(err); send_tg(err); sys.exit(1)
 
     if df is None or df.empty:
-        send_tg(f"Scanner Error: yfinance returned empty data\n{scanned_at}")
+        send_tg(f"Scanner Error: empty yfinance data\n{scanned_at}")
         sys.exit(1)
 
     print(f"Data shape: {df.shape}")
@@ -89,7 +96,8 @@ def main():
     inside = []
     no_data = 0
     not_inside = 0
-    cpr_day = None
+    today_label = None
+    tomorrow_label = None
 
     for sym in STOCKS:
         ts = f"{sym}.NS"
@@ -100,45 +108,66 @@ def main():
             if len(stock_df) < 2:
                 no_data += 1; continue
 
-            # Most recent trading day's data
-            today = stock_df.iloc[-1]
-            yday  = stock_df.iloc[-2]
+            # day_today = most recent trading day (the day just closed at 4 PM)
+            # day_yday  = the day before that
+            day_today = stock_df.iloc[-1]
+            day_yday  = stock_df.iloc[-2]
 
-            if cpr_day is None:
-                cpr_day = stock_df.index[-1].strftime("%a %d %b %Y")
-                print(f"Latest trading day in data: {cpr_day}")
-                print(f"Previous day: {stock_df.index[-2].strftime('%a %d %b %Y')}")
+            if today_label is None:
+                d_today = stock_df.index[-1]
+                today_label = d_today.strftime("%a %d %b %Y")
+                # Next trading day = today + 1 business day (skip weekends)
+                d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
+                tomorrow_label = d_tomorrow.strftime("%a %d %b %Y")
+                print(f"Today (data day): {today_label}")
+                print(f"Tomorrow (target): {tomorrow_label}")
 
-            # CPR calculated from PREVIOUS day's OHLC, applies to TODAY
-            h_y, l_y, c_y = float(yday['High']), float(yday['Low']), float(yday['Close'])
-            c_today = float(today['Close'])
-            v_today = float(today['Volume'])
+            # Today's CPR = calculated from YESTERDAY's H/L/C (was active during today)
+            today_cpr = calc_cpr(
+                float(day_yday['High']),
+                float(day_yday['Low']),
+                float(day_yday['Close']))
 
-            pv = calc_cpr(h_y, l_y, c_y)
+            # Tomorrow's CPR = calculated from TODAY's H/L/C (will be active tomorrow)
+            tomorrow_cpr = calc_cpr(
+                float(day_today['High']),
+                float(day_today['Low']),
+                float(day_today['Close']))
 
-            if pv['lower'] <= c_today <= pv['upper']:
-                w_pct = ((pv['upper'] - pv['lower']) / c_today) * 100
+            # Inside CPR: tomorrow's CPR is fully inside today's CPR
+            is_inside = (tomorrow_cpr['upper'] <= today_cpr['upper'] and
+                         tomorrow_cpr['lower'] >= today_cpr['lower'])
+
+            if is_inside:
+                w_pct = (tomorrow_cpr['width'] / float(day_today['Close'])) * 100
                 inside.append({
-                    'sym': sym, 'c': c_today, 'v': v_today, 'w_pct': w_pct,
-                    'upper': pv['upper'], 'lower': pv['lower'],
+                    'sym': sym,
+                    'c': float(day_today['Close']),
+                    'v': float(day_today['Volume']),
+                    'tom_upper': tomorrow_cpr['upper'],
+                    'tom_lower': tomorrow_cpr['lower'],
+                    'tod_upper': today_cpr['upper'],
+                    'tod_lower': today_cpr['lower'],
+                    'w_pct': w_pct,
                 })
             else:
                 not_inside += 1
-        except Exception as e:
+        except Exception:
             no_data += 1
             continue
 
-    inside.sort(key=lambda x: x['w_pct'])  # narrowest CPR first
+    inside.sort(key=lambda x: x['w_pct'])  # narrowest tomorrow CPR first
     print(f"Inside CPR: {len(inside)}, Not inside: {not_inside}, No data: {no_data}")
 
     if not inside:
-        send_tg(f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\nData: {cpr_day or 'unknown'}\n\nNo inside CPR stocks today.")
+        send_tg(f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n\nNo inside CPR stocks for {tomorrow_label}.")
         return
 
     head = (f"<b>📊 Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
-            f"Data: <b>{cpr_day}</b>\n"
+            f"For trading on: <b>{tomorrow_label}</b>\n"
+            f"Based on close of: {today_label}\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"Inside CPR: <b>{len(inside)}</b> stocks\n"
+            f"Tomorrow's CPR inside Today's CPR: <b>{len(inside)}</b> stocks\n"
             f"Sorted by narrowest CPR first\n"
             f"━━━━━━━━━━━━━━━━━━\n\n"
             f"<code> S.No  Symbol         Volume</code>\n")
