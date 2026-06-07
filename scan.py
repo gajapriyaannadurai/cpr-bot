@@ -1,204 +1,126 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner."""
-import os, re, sys, datetime, time, requests
+"""Inside CPR Scanner — fetches NSE data via yfinance, sends to Telegram."""
+import os, sys, datetime, requests
+import yfinance as yf
+import pandas as pd
 
-try:
-    import cloudscraper
-    HAS_CS = True
-except ImportError:
-    HAS_CS = False
-
-SCREENER_URL = "https://chartink.com/screener/inside-cpr-2062"
-SCAN_URL = "https://chartink.com/screener/scan_results"
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-TG_CHAT = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 
-# Hardcoded clause since Chartink loads scan_clause via JS for user-saved screeners
-SCAN_CLAUSE = "( {cash} ( latest close > [latest cpr bottom] and latest close < [latest cpr top] ) )"
+# Nifty 200 — the most actively traded NSE stocks
+STOCKS = """
+RELIANCE TCS HDFCBANK BHARTIARTL ICICIBANK INFY SBIN HINDUNILVR ITC LT KOTAKBANK
+LICI BAJFINANCE HCLTECH MARUTI SUNPHARMA AXISBANK ADANIENT ONGC NTPC TATAMOTORS
+DMART ULTRACEMCO TITAN ASIANPAINT WIPRO BAJAJFINSV NESTLEIND M&M COALINDIA POWERGRID
+ADANIPORTS HAL JSWSTEEL TATASTEEL BAJAJ-AUTO TRENT IOC ADANIPOWER ADANIGREEN HINDALCO
+SIEMENS PIDILITIND VBL DLF GRASIM TECHM BEL HDFCLIFE BRITANNIA CIPLA APOLLOHOSP
+SBILIFE IRFC INDIGO EICHERMOT DRREDDY ABB DIVISLAB INDUSINDBK SHREECEM ZOMATO
+TATACONSUM BPCL HEROMOTOCO LTIM CHOLAFIN ICICIPRULI ICICIGI HAVELLS UPL JIOFIN
+GAIL TATAPOWER GODREJCP DABUR PFC RECLTD AMBUJACEM ADANIENSOL VEDL TVSMOTOR
+SHRIRAMFIN BAJAJHLDNG IRCTC CGPOWER NAUKRI POLYCAB PNB BANKBARODA TIINDIA SRF
+INDUSTOWER LODHA TORNTPHARM BERGEPAINT MARICO SBICARD BOSCHLTD ATGL UNITDSPR
+MUTHOOTFIN ABCAPITAL BHEL CONCOR LICHSGFIN TATACOMM PETRONET MFSL MPHASIS
+COLPAL HINDPETRO BHARATFORG MAXHEALTH OBEROIRLTY ZYDUSLIFE INDHOTEL BIOCON
+BANKINDIA LUPIN HINDZINC ALKEM AUBANK PERSISTENT NMDC PAGEIND IDFCFIRSTB
+JSWENERGY ABFRL JINDALSTEL CUMMINSIND IGL OFSS ASHOKLEY BALKRISIND POLICYBZR
+SAIL OIL AUROPHARMA INDIANB UBL CANBK COFORGE TORNTPOWER MRF GMRINFRA CROMPTON
+ACC GUJGASLTD LTTS NHPC NLCINDIA IDEA APLAPOLLO ESCORTS RAMCOCEM SUNDARMFIN
+MOTHERSON HUDCO FACT YESBANK PAYTM IRB BHARTIHEXA LAURUSLABS AARTIIND MANAPPURAM
+ASTRAL PIIND NAM-INDIA SUPREMEIND CUB DELHIVERY DIXON PRESTIGE MAZDOCK
+NYKAA TATAELXSI FEDERALBNK ENDURANCE EXIDEIND CANFINHOME LINDEINDIA RVNL
+KPITTECH POLYMED IPCALAB SUNTV GLENMARK CAMS MAHABANK NIACL VOLTAS BSE GLAND
+JBCHEPHARM CDSL JSL HONAUT SUVENPHAR DEEPAKNTR APOLLOTYRE GICRE EMAMILTD UNIONBANK
+TATAINVEST POONAWALLA CESC RBLBANK BANDHANBNK GODREJPROP NATIONALUM 360ONE NSDLNGINDS
+HINDCOPPER SBFC HFCL KPRMILL FIVESTAR FINPIPE THERMAX KAJARIACER MEDPLUS
+""".split()
 
 
 def send_tg(text):
     if not (TG_TOKEN and TG_CHAT):
-        print("[tg] missing creds")
-        return False
+        print("[tg] missing creds"); return False
     for chunk in [text[i:i+3800] for i in range(0, len(text), 3800)]:
         try:
-            r = requests.post(
-                f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+            r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
                 data={"chat_id": TG_CHAT, "text": chunk, "parse_mode": "HTML",
                       "disable_web_page_preview": "true"}, timeout=15)
             if not r.ok:
-                print(f"[tg] error {r.status_code}: {r.text[:200]}")
-                return False
+                print(f"[tg] error {r.status_code}: {r.text[:200]}"); return False
         except Exception as e:
-            print(f"[tg] exception: {e}")
-            return False
-    print("[tg] sent ok")
-    return True
-
-
-def make_session():
-    if HAS_CS:
-        print("[scan] using cloudscraper")
-        s = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "darwin", "desktop": True})
-    else:
-        print("[scan] using plain requests")
-        s = requests.Session()
-    s.headers.update({
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate",
-    })
-    return s
-
-
-def chartink_scan():
-    s = make_session()
-    try:
-        r0 = s.get("https://chartink.com/", timeout=20)
-        print(f"[scan] homepage status: {r0.status_code}")
-    except Exception as e:
-        print(f"[scan] homepage error: {e}")
-    time.sleep(1)
-    r = s.get(SCREENER_URL, timeout=30)
-    print(f"[scan] screener status: {r.status_code}")
-    if r.status_code != 200:
-        raise RuntimeError(f"Screener returned {r.status_code}")
-    html = r.text
-
-    csrf = ""
-    for pat in [r'<meta name="csrf-token" content="([^"]+)"',
-                r'"csrf-token"\s+content="([^"]+)"']:
-        m = re.search(pat, html)
-        if m:
-            csrf = m.group(1)
-            print(f"[scan] csrf found, len={len(csrf)}")
-            break
-    if not csrf:
-        raise RuntimeError("Could not get CSRF token")
-
-    print(f"[scan] using clause: {SCAN_CLAUSE}")
-    r = s.post(SCAN_URL, data={"scan_clause": SCAN_CLAUSE},
-               headers={"X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-Token": csrf,
-                        "Referer": SCREENER_URL,
-                        "Origin": "https://chartink.com",
-                        "Accept": "application/json, text/javascript, */*; q=0.01",
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
-               timeout=30)
-    print(f"[scan] scan_results status: {r.status_code}")
-    if not r.ok:
-        print(f"[scan] response body: {r.text[:500]}")
-    r.raise_for_status()
-    return r.json()
+            print(f"[tg] exception: {e}"); return False
+    print("[tg] sent ok"); return True
 
 
 def calc_cpr(h, l, c):
     pp = (h + l + c) / 3
     bc = (h + l) / 2
     tc = 2 * pp - bc
-    return {"pp": pp, "bc": bc, "tc": tc, "r1": 2*pp-l, "r2": pp+(h-l), "s1": 2*pp-h, "s2": pp-(h-l)}
+    return {"pp": pp, "bc": bc, "tc": tc}
 
 
-def wc(v, p):
-    x = (v / p) * 100
-    return "Narrow" if x < 0.3 else ("Medium" if x < 0.8 else "Wide")
-
-
-def dc(v, p):
-    x = (v / p) * 100
-    return "Narrow" if x < 1.0 else ("Medium" if x < 2.0 else "Wide")
-
-
-def enrich(rows):
-    out = []
-    for r in rows:
-        sym = r.get("nsecode") or r.get("symbol") or ""
-        name = r.get("company_name") or r.get("name") or sym
-        try:
-            c = float(r.get("close", 0))
-            h = float(r.get("high", 0))
-            l = float(r.get("low", 0))
-            chg = float(r.get("per_chg") or r.get("change_pct") or 0)
-        except Exception:
-            continue
-        if not (c and h and l):
-            continue
-        pv = calc_cpr(h, l, c)
-        w_abs = pv["tc"] - pv["bc"]
-        d_r1 = pv["r1"] - pv["tc"]
-        d_s1 = pv["bc"] - pv["s1"]
-        w_cls = wc(w_abs, c)
-        r1_cls = dc(d_r1, c)
-        s1_cls = dc(d_s1, c)
-        inside = pv["bc"] <= c <= pv["tc"]
-        pct_in = round((c - pv["bc"]) / w_abs * 100, 1) if (inside and w_abs > 0) else None
-        if w_cls == "Narrow" and r1_cls != "Wide" and s1_cls != "Wide":
-            quality = "Good"
-        elif w_cls == "Wide":
-            quality = "Skip"
-        else:
-            quality = "Fair"
-        out.append({"sym": sym, "name": name, "c": c, "h": h, "l": l, "chg": chg, "pv": pv,
-                    "w_abs": w_abs, "d_r1": d_r1, "d_s1": d_s1, "w_cls": w_cls,
-                    "r1_cls": r1_cls, "s1_cls": s1_cls, "inside": inside, "pct_in": pct_in,
-                    "quality": quality, "w_pct": round((w_abs/c)*100, 3)})
-    out.sort(key=lambda x: (not x["inside"], x["w_pct"]))
-    return out
-
-
-def format_msg(enriched, scanned_at, total):
-    inside = [d for d in enriched if d["inside"]]
-    good = [d for d in inside if d["quality"] == "Good"]
-    fair = [d for d in inside if d["quality"] == "Fair"]
-    head = (f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
-            f"-------------------------\n"
-            f"Scanned: {total}\nInside CPR: {len(inside)}\n"
-            f"Good: {len(good)}  Fair: {len(fair)}\n"
-            f"-------------------------\n")
-
-    def block(label, items):
-        if not items:
-            return ""
-        lines = [f"\n<b>{label}</b>"]
-        for d in items[:25]:
-            lines.append(f"\n<b>{d['sym']}</b> Rs {d['c']:.2f} ({d['chg']:+.2f}%)\n"
-                         f"  CPR: {d['w_cls']} ({d['w_pct']:.3f}%)\n"
-                         f"  TC {d['pv']['tc']:.2f} BC {d['pv']['bc']:.2f}\n"
-                         f"  R1 {d['pv']['r1']:.2f} S1 {d['pv']['s1']:.2f}\n"
-                         f"  In CPR: <b>{d['pct_in']}%</b>")
-        if len(items) > 25:
-            lines.append(f"\n<i>... {len(items)-25} more</i>")
-        return "\n".join(lines) + "\n"
-
-    if not inside:
-        return head + "\n<i>No inside CPR stocks today.</i>"
-    return head + block("GOOD SETUPS", good) + block("FAIR SETUPS", fair)
+def fmt_vol(v):
+    if v >= 1e7: return f"{v/1e7:.2f}Cr"
+    if v >= 1e5: return f"{v/1e5:.2f}L"
+    return f"{int(v)}"
 
 
 def main():
-    print("Starting...")
-    print(f"Telegram: token={'yes' if TG_TOKEN else 'NO'} chat={'yes' if TG_CHAT else 'NO'}")
+    print("Starting yfinance scan...")
+    print(f"Telegram: {'yes' if TG_TOKEN else 'NO'}/{'yes' if TG_CHAT else 'NO'}")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
     scanned_at = ist.strftime("%a, %d %b %Y  %I:%M %p IST")
     print(f"Time: {scanned_at}")
+    print(f"Universe: {len(STOCKS)} stocks")
+
+    tickers = [f"{s}.NS" for s in STOCKS]
+    print("Downloading from Yahoo Finance...")
+
     try:
-        raw = chartink_scan()
+        df = yf.download(tickers, period="5d", group_by='ticker',
+                         auto_adjust=False, progress=False, threads=True, timeout=60)
     except Exception as e:
-        err = f"Scanner Error\n{scanned_at}\n\n{str(e)[:1000]}"
-        send_tg(err)
-        print(err)
-        sys.exit(1)
-    rows = raw.get("data") or raw.get("stocks") or raw.get("result") or []
-    print(f"Got {len(rows)} rows")
-    if not rows:
-        send_tg(f"Scanner ran. 0 stocks today.\n{scanned_at}")
+        err = f"yfinance error\n{scanned_at}\n\n{str(e)[:500]}"
+        print(err); send_tg(err); sys.exit(1)
+
+    print("Processing...")
+    inside_stocks = []
+    failed = 0
+    for sym in STOCKS:
+        ts = f"{sym}.NS"
+        try:
+            if ts not in df.columns.get_level_values(0):
+                failed += 1; continue
+            stock_df = df[ts].dropna()
+            if len(stock_df) == 0:
+                failed += 1; continue
+            row = stock_df.iloc[-1]
+            h, l, c, v = float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume'])
+            if not (h and l and c):
+                failed += 1; continue
+            pv = calc_cpr(h, l, c)
+            if pv['bc'] <= c <= pv['tc']:
+                w_pct = ((pv['tc'] - pv['bc']) / c) * 100
+                inside_stocks.append({'sym': sym, 'c': c, 'v': v, 'w_pct': w_pct})
+        except Exception:
+            failed += 1; continue
+
+    inside_stocks.sort(key=lambda x: x['w_pct'])  # narrowest CPR first
+    print(f"Inside CPR: {len(inside_stocks)}, failed: {failed}")
+
+    if not inside_stocks:
+        send_tg(f"<b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n\nNo inside CPR stocks today.")
         return
-    enriched = enrich(rows)
-    msg = format_msg(enriched, scanned_at, len(rows))
+
+    head = (f"<b>📊 Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"Inside CPR: <b>{len(inside_stocks)}</b> stocks\n"
+            f"Sorted by narrowest CPR first\n"
+            f"━━━━━━━━━━━━━━━━━━\n\n"
+            f"<b>S.No  Symbol         Volume</b>\n")
+    lines = [f"{i:>3}. <b>{s['sym']:<13}</b> {fmt_vol(s['v'])}" for i, s in enumerate(inside_stocks, 1)]
+    msg = head + "\n".join(lines)
+
     if send_tg(msg):
-        print("done")
+        print("✅ Sent successfully")
 
 
 if __name__ == "__main__":
