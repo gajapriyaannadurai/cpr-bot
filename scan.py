@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — sends a poster image to Telegram."""
+"""Inside CPR Scanner — branded poster image to Telegram."""
 import os, sys, io, datetime, requests
 import yfinance as yf
 import pandas as pd
@@ -7,6 +7,21 @@ from PIL import Image, ImageDraw, ImageFont
 
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
+# Brand customisation
+BRAND_NAME    = "STARK SCHOOL OF FINANCE"
+BRAND_FOOTER  = "www.tradingwithgp.com"   # set to "" to hide
+LOGO_FILE     = "logo.png"
+
+# Brand colors (from logo)
+NAVY      = (26, 40, 71)
+GREEN     = (45, 138, 78)
+GREEN_LT  = (140, 205, 165)
+CREAM     = (248, 249, 252)
+GREY_LN   = (210, 215, 225)
+GREY_TXT  = (107, 114, 128)
+DARK      = (26, 26, 26)
+WHITE     = (255, 255, 255)
 
 STOCKS = """
 RELIANCE TCS HDFCBANK BHARTIARTL ICICIBANK INFY SBIN HINDUNILVR ITC LT KOTAKBANK
@@ -41,16 +56,11 @@ def send_tg_text(text):
 
 
 def send_tg_photo(image_bytes, caption):
-    r = requests.post(
-        f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
+    r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
         data={"chat_id": TG_CHAT, "caption": caption, "parse_mode": "HTML"},
-        files={"photo": ("inside_cpr.png", image_bytes, "image/png")},
-        timeout=30)
-    if r.ok:
-        print("[tg] photo sent ok")
-        return True
-    print(f"[tg] photo error {r.status_code}: {r.text[:200]}")
-    return False
+        files={"photo": ("inside_cpr.png", image_bytes, "image/png")}, timeout=30)
+    if r.ok: print("[tg] photo sent"); return True
+    print(f"[tg] error {r.status_code}: {r.text[:200]}"); return False
 
 
 def calc_cpr(h, l, c):
@@ -60,112 +70,124 @@ def calc_cpr(h, l, c):
     return {"upper": max(tc, bc), "lower": min(tc, bc), "width": abs(tc - bc)}
 
 
-def get_font(size):
-    """Try to load a clean bold font, fall back to default."""
+def font(size, bold=True):
     candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
-    for path in candidates:
-        if os.path.exists(path):
-            return ImageFont.truetype(path, size)
+    for p in candidates:
+        if os.path.exists(p):
+            return ImageFont.truetype(p, size)
     return ImageFont.load_default()
 
 
+def center_text(d, text, font_obj, x_center, y, fill):
+    bbox = d.textbbox((0, 0), text, font=font_obj)
+    w = bbox[2] - bbox[0]
+    d.text((x_center - w / 2, y), text, fill=fill, font=font_obj)
+
+
 def make_poster(stocks, target_date):
-    """Render a poster image like the user's reference."""
     n = len(stocks)
-    # 2 columns layout when more than 6 stocks
-    use_two_col = n > 6
+    use_two_col = n > 5
     rows = (n + 1) // 2 if use_two_col else n
 
     W = 1080
     pad = 60
-    title_h = 220
-    table_top = title_h + 60
-    row_h = 90
-    table_h = (rows + 1) * row_h
-    footer_h = 100
-    H = table_top + table_h + footer_h + pad
+    row_h = 88
 
-    img = Image.new("RGB", (W, H), "white")
+    # Layout sections
+    y_logo_top = 50
+    logo_area_h = 240
+    y_title_top = y_logo_top + logo_area_h
+    title_bar_h = 200
+    y_table_top = y_title_top + title_bar_h + 50
+    table_h = (rows + 1) * row_h
+    y_footer = y_table_top + table_h + 60
+    footer_h = 100
+    H = y_footer + footer_h + 30
+
+    img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
 
-    # ── Title ──
-    f_title = get_font(58)
-    f_subtitle = get_font(48)
-    title_line1 = target_date
-    title_line2 = "INSIDE CPR STOCKS"
+    # ── Logo ──
+    try:
+        logo = Image.open(LOGO_FILE).convert("RGBA")
+        logo.thumbnail((420, logo_area_h - 20), Image.LANCZOS)
+        img.paste(logo, ((W - logo.width) // 2, y_logo_top + (logo_area_h - logo.height) // 2), logo)
+    except Exception as e:
+        print(f"[poster] logo load failed: {e}")
+        center_text(d, BRAND_NAME, font(56), W / 2, y_logo_top + 90, NAVY)
 
-    bbox = d.textbbox((0, 0), title_line1, font=f_title)
-    w1 = bbox[2] - bbox[0]
-    d.text(((W - w1) / 2, 80), title_line1, fill="black", font=f_title)
-
-    bbox = d.textbbox((0, 0), title_line2, font=f_subtitle)
-    w2 = bbox[2] - bbox[0]
-    d.text(((W - w2) / 2, 160), title_line2, fill="black", font=f_subtitle)
+    # ── Title Bar (navy bg) ──
+    d.rectangle([0, y_title_top, W, y_title_top + title_bar_h], fill=NAVY)
+    # Green accent line on left
+    d.rectangle([0, y_title_top, 12, y_title_top + title_bar_h], fill=GREEN)
+    # Title
+    center_text(d, "INSIDE CPR STOCKS", font(64), W / 2, y_title_top + 35, WHITE)
+    # Date subtitle
+    center_text(d, target_date, font(52), W / 2, y_title_top + 115, GREEN_LT)
 
     # ── Table ──
-    f_head = get_font(36)
-    f_cell = get_font(36)
-
     if use_two_col:
-        col_widths = [120, (W - 2 * pad - 120) / 2, (W - 2 * pad - 120) / 2]
-        x_cols = [pad, pad + col_widths[0], pad + col_widths[0] + col_widths[1]]
-        headers = ["S.NO", "STOCKS", ""]
+        col_w = [130, (W - 2 * pad - 130) / 2, (W - 2 * pad - 130) / 2]
+        x_col = [pad, pad + col_w[0], pad + col_w[0] + col_w[1]]
+        headers = ["S.NO", "STOCKS", "STOCKS"]
     else:
-        col_widths = [200, W - 2 * pad - 200]
-        x_cols = [pad, pad + col_widths[0]]
+        col_w = [180, W - 2 * pad - 180]
+        x_col = [pad, pad + col_w[0]]
         headers = ["S.NO", "STOCKS"]
 
-    y = table_top
-    # header row
-    for i, h_text in enumerate(headers):
-        x = x_cols[i]
-        cw = col_widths[i] if i < len(col_widths) else col_widths[-1]
-        d.rectangle([x, y, x + cw, y + row_h], outline="black", width=3)
-        if h_text:
-            bbox = d.textbbox((0, 0), h_text, font=f_head)
-            tw = bbox[2] - bbox[0]
-            th = bbox[3] - bbox[1]
-            d.text((x + (cw - tw) / 2, y + (row_h - th) / 2 - 5), h_text, fill="black", font=f_head)
+    f_head = font(34)
+    f_cell = font(38)
+    f_no   = font(34)
 
+    y = y_table_top
+
+    # Header row (navy bg)
+    for i, h in enumerate(headers):
+        x = x_col[i]; cw = col_w[i]
+        d.rectangle([x, y, x + cw, y + row_h], fill=NAVY, outline=NAVY)
+        bbox = d.textbbox((0, 0), h, font=f_head)
+        tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
+        d.text((x + (cw - tw) / 2, y + (row_h - th) / 2 - 4), h, fill=WHITE, font=f_head)
     y += row_h
 
-    # data rows
+    # Data rows
     if use_two_col:
-        left = stocks[:rows]
-        right = stocks[rows:]
+        left = stocks[:rows]; right = stocks[rows:]
         for i in range(rows):
+            row_bg = CREAM if i % 2 == 0 else WHITE
             # S.No cell
-            d.rectangle([x_cols[0], y, x_cols[0] + col_widths[0], y + row_h], outline="black", width=3)
-            sno_text = f"{i+1}."
-            bbox = d.textbbox((0, 0), sno_text, font=f_cell)
-            tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
-            d.text((x_cols[0] + (col_widths[0] - tw) / 2, y + (row_h - th) / 2 - 5), sno_text, fill="black", font=f_cell)
-            # Left column
-            d.rectangle([x_cols[1], y, x_cols[1] + col_widths[1], y + row_h], outline="black", width=3)
-            sym_l = left[i] if i < len(left) else ""
-            if sym_l:
-                d.text((x_cols[1] + 30, y + (row_h - 40) / 2), sym_l, fill="black", font=f_cell)
-            # Right column
-            d.rectangle([x_cols[2], y, x_cols[2] + col_widths[2], y + row_h], outline="black", width=3)
-            sym_r = right[i] if i < len(right) else ""
-            if sym_r:
-                d.text((x_cols[2] + 30, y + (row_h - 40) / 2), sym_r, fill="black", font=f_cell)
+            d.rectangle([x_col[0], y, x_col[0] + col_w[0], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
+            sno = f"{i+1}."
+            bbox = d.textbbox((0, 0), sno, font=f_no); tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
+            d.text((x_col[0] + (col_w[0] - tw) / 2, y + (row_h - th) / 2 - 4), sno, fill=NAVY, font=f_no)
+            # Left
+            d.rectangle([x_col[1], y, x_col[1] + col_w[1], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
+            if i < len(left):
+                d.text((x_col[1] + 40, y + (row_h - 42) / 2 - 2), left[i], fill=DARK, font=f_cell)
+            # Right
+            d.rectangle([x_col[2], y, x_col[2] + col_w[2], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
+            if i < len(right):
+                d.text((x_col[2] + 40, y + (row_h - 42) / 2 - 2), right[i], fill=DARK, font=f_cell)
             y += row_h
     else:
         for i, sym in enumerate(stocks):
-            d.rectangle([x_cols[0], y, x_cols[0] + col_widths[0], y + row_h], outline="black", width=3)
-            sno_text = f"{i+1}."
-            bbox = d.textbbox((0, 0), sno_text, font=f_cell)
-            tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
-            d.text((x_cols[0] + (col_widths[0] - tw) / 2, y + (row_h - th) / 2 - 5), sno_text, fill="black", font=f_cell)
-            d.rectangle([x_cols[1], y, x_cols[1] + col_widths[1], y + row_h], outline="black", width=3)
-            d.text((x_cols[1] + 30, y + (row_h - 40) / 2), sym, fill="black", font=f_cell)
+            row_bg = CREAM if i % 2 == 0 else WHITE
+            d.rectangle([x_col[0], y, x_col[0] + col_w[0], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
+            sno = f"{i+1}."
+            bbox = d.textbbox((0, 0), sno, font=f_no); tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
+            d.text((x_col[0] + (col_w[0] - tw) / 2, y + (row_h - th) / 2 - 4), sno, fill=NAVY, font=f_no)
+            d.rectangle([x_col[1], y, x_col[1] + col_w[1], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
+            d.text((x_col[1] + 40, y + (row_h - 42) / 2 - 2), sym, fill=DARK, font=f_cell)
             y += row_h
+
+    # ── Footer ──
+    if BRAND_FOOTER:
+        # Thin green divider
+        d.rectangle([pad, y_footer, W - pad, y_footer + 3], fill=GREEN)
+        center_text(d, BRAND_FOOTER, font(34), W / 2, y_footer + 35, GREY_TXT)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
@@ -184,12 +206,9 @@ def main():
         df = yf.download(tickers, period="10d", group_by='ticker',
                          auto_adjust=False, progress=False, threads=True, timeout=90)
     except Exception as e:
-        send_tg_text(f"yfinance error: {e}")
-        sys.exit(1)
-
+        send_tg_text(f"yfinance error: {e}"); sys.exit(1)
     if df is None or df.empty:
-        send_tg_text("yfinance returned empty data")
-        sys.exit(1)
+        send_tg_text("yfinance returned empty data"); sys.exit(1)
 
     print("Processing...")
     inside = []
@@ -198,11 +217,9 @@ def main():
     for sym in STOCKS:
         ts = f"{sym}.NS"
         try:
-            if ts not in df.columns.get_level_values(0):
-                continue
+            if ts not in df.columns.get_level_values(0): continue
             stock_df = df[ts].dropna(how='any')
-            if len(stock_df) < 2:
-                continue
+            if len(stock_df) < 2: continue
 
             day_today = stock_df.iloc[-1]
             day_yday  = stock_df.iloc[-2]
@@ -210,13 +227,12 @@ def main():
             if tomorrow_label is None:
                 d_today = stock_df.index[-1]
                 d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
-                tomorrow_label = d_tomorrow.strftime("%d-%m-%Y").upper()
+                tomorrow_label = d_tomorrow.strftime("%d-%m-%Y")
                 print(f"Target: {tomorrow_label}")
 
-            today_cpr = calc_cpr(float(day_yday['High']), float(day_yday['Low']), float(day_yday['Close']))
+            today_cpr    = calc_cpr(float(day_yday['High']),  float(day_yday['Low']),  float(day_yday['Close']))
             tomorrow_cpr = calc_cpr(float(day_today['High']), float(day_today['Low']), float(day_today['Close']))
 
-            # Tomorrow's CPR is fully inside Today's CPR
             if (tomorrow_cpr['upper'] <= today_cpr['upper'] and
                 tomorrow_cpr['lower'] >= today_cpr['lower']):
                 w_pct = (tomorrow_cpr['width'] / float(day_today['Close'])) * 100
@@ -224,7 +240,7 @@ def main():
         except Exception:
             continue
 
-    inside.sort(key=lambda x: x['w_pct'])  # narrowest first
+    inside.sort(key=lambda x: x['w_pct'])
     print(f"Found {len(inside)} inside CPR stocks")
 
     if not inside:
@@ -235,7 +251,7 @@ def main():
     print(f"Stocks: {syms}")
 
     img_buf = make_poster(syms, tomorrow_label)
-    caption = f"<b>Inside CPR Stock List</b>\nFor next trading session: <b>{tomorrow_label}</b>\nTotal: {len(syms)} stocks"
+    caption = f"<b>Inside CPR Stock List</b>\nFor next trading session: <b>{tomorrow_label}</b>"
     send_tg_photo(img_buf, caption)
 
 
