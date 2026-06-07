@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — robust version with debug + telegram error reporting."""
-import os, re, sys, json, datetime, time, requests
+"""Inside CPR Scanner — robust version."""
+import os, re, sys, datetime, time, requests
 
 try:
     import cloudscraper
@@ -16,7 +16,7 @@ TG_CHAT = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 
 def send_tg(text):
     if not (TG_TOKEN and TG_CHAT):
-        print(f"[tg] missing creds: token={'yes' if TG_TOKEN else 'NO'} chat={'yes' if TG_CHAT else 'NO'}")
+        print(f"[tg] missing creds")
         return False
     for chunk in [text[i:i+3800] for i in range(0, len(text), 3800)]:
         try:
@@ -52,7 +52,6 @@ def make_session():
 
 def chartink_scan():
     s = make_session()
-    # Warm up
     try:
         r0 = s.get("https://chartink.com/", timeout=20)
         print(f"[scan] homepage status: {r0.status_code}")
@@ -62,30 +61,29 @@ def chartink_scan():
     r = s.get(SCREENER_URL, timeout=30)
     print(f"[scan] screener status: {r.status_code}, len: {len(r.text)}")
     if r.status_code != 200:
-        snippet = r.text[:500] if r.text else "(empty)"
-        raise RuntimeError(f"Screener returned {r.status_code}. Snippet:\n{snippet}")
+        raise RuntimeError(f"Screener returned {r.status_code}")
     html = r.text
+
     csrf = ""
     for pat in [r'<meta name="csrf-token" content="([^"]+)"',
-                r'"csrf-token"\s+content="([^"]+)"',
-                r'csrf[_-]?token["\':\s]*[:=]\s*["\']([A-Za-z0-9+/=_\-]{20,})["\']']:
+                r'"csrf-token"\s+content="([^"]+)"']:
         m = re.search(pat, html)
         if m:
-            csrf = m.group(1); print(f"[scan] csrf found via pattern: {pat[:40]}"); break
+            csrf = m.group(1)
+            print(f"[scan] csrf found, len={len(csrf)}")
+            break
     if not csrf:
-        snippet = html[:1000]
-        raise RuntimeError(f"Could not get CSRF token. HTML snippet:\n{snippet}")
-   clause = ""
+        raise RuntimeError("Could not get CSRF token")
+
+    clause = ""
     patterns = [
         r'"scan_clause"\s*:\s*"((?:[^"\\]|\\.)+)"',
-        r"'scan_clause'\s*:\s*'((?:[^'\\]|\\.)+)'",
         r'name=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
         r'value=["\']([^"\']+)["\'][^>]*name=["\']scan_clause["\']',
         r'id=["\']scan_clause["\'][^>]*value=["\']([^"\']+)["\']',
         r'<textarea[^>]*scan_clause[^>]*>([^<]+)</textarea>',
         r'data-scan-clause=["\']([^"\']+)["\']',
         r'scan_clause\s*=\s*["\']((?:[^"\'\\]|\\.)+)["\']',
-        r'clause["\']?\s*:\s*["\']((?:[^"\'\\]|\\.){20,})["\']',
     ]
     for i, pat in enumerate(patterns):
         m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
@@ -94,33 +92,44 @@ def chartink_scan():
             print(f"[scan] clause found via pattern #{i}, len={len(clause)}")
             print(f"[scan] clause preview: {clause[:200]}")
             break
+
     if not clause:
-        # Debug: dump all occurrences of 'clause' in HTML to logs + telegram
         snippets = []
-        for m in re.finditer(r'.{0,100}clause.{0,200}', html, re.IGNORECASE):
+        for m in re.finditer(r'.{0,80}clause.{0,200}', html, re.IGNORECASE):
             snippets.append(m.group(0))
-        debug = "\n---\n".join(snippets[:5]) if snippets else "no 'clause' word found in HTML"
-        print(f"[scan] DEBUG snippets around 'clause':\n{debug}")
-        send_tg(f"⚠️ <b>scan_clause not found</b>\n\nHTML snippets containing 'clause':\n\n<code>{debug[:2000]}</code>")
-        raise RuntimeError("Could not get scan_clause from page")
-    print(f"[scan] csrf len={len(csrf)} clause len={len(clause)}")
+        debug = "\n---\n".join(snippets[:5]) if snippets else "no clause word found"
+        print(f"[scan] DEBUG:\n{debug}")
+        send_tg(f"⚠️ scan_clause not found\n\nSnippets:\n\n{debug[:2000]}")
+        raise RuntimeError("Could not get scan_clause")
+
     r = s.post(SCAN_URL, data={"scan_clause": clause},
-               headers={"X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": csrf,
-                        "Referer": SCREENER_URL, "Origin": "https://chartink.com",
+               headers={"X-Requested-With": "XMLHttpRequest",
+                        "X-CSRF-Token": csrf,
+                        "Referer": SCREENER_URL,
+                        "Origin": "https://chartink.com",
                         "Accept": "application/json, text/javascript, */*; q=0.01",
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}, timeout=30)
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+               timeout=30)
     print(f"[scan] scan_results status: {r.status_code}")
     r.raise_for_status()
     return r.json()
 
 
 def calc_cpr(h, l, c):
-    pp = (h + l + c) / 3; bc = (h + l) / 2; tc = 2*pp - bc
+    pp = (h + l + c) / 3
+    bc = (h + l) / 2
+    tc = 2 * pp - bc
     return {"pp": pp, "bc": bc, "tc": tc, "r1": 2*pp-l, "r2": pp+(h-l), "s1": 2*pp-h, "s2": pp-(h-l)}
 
 
-def wc(v, p): x = (v/p)*100; return "Narrow" if x < 0.3 else ("Medium" if x < 0.8 else "Wide")
-def dc(v, p): x = (v/p)*100; return "Narrow" if x < 1.0 else ("Medium" if x < 2.0 else "Wide")
+def wc(v, p):
+    x = (v / p) * 100
+    return "Narrow" if x < 0.3 else ("Medium" if x < 0.8 else "Wide")
+
+
+def dc(v, p):
+    x = (v / p) * 100
+    return "Narrow" if x < 1.0 else ("Medium" if x < 2.0 else "Wide")
 
 
 def enrich(rows):
@@ -129,16 +138,29 @@ def enrich(rows):
         sym = r.get("nsecode") or r.get("symbol") or ""
         name = r.get("company_name") or r.get("name") or sym
         try:
-            c = float(r.get("close", 0)); h = float(r.get("high", 0)); l = float(r.get("low", 0))
+            c = float(r.get("close", 0))
+            h = float(r.get("high", 0))
+            l = float(r.get("low", 0))
             chg = float(r.get("per_chg") or r.get("change_pct") or 0)
-        except: continue
-        if not (c and h and l): continue
+        except Exception:
+            continue
+        if not (c and h and l):
+            continue
         pv = calc_cpr(h, l, c)
-        w_abs = pv["tc"] - pv["bc"]; d_r1 = pv["r1"] - pv["tc"]; d_s1 = pv["bc"] - pv["s1"]
-        w_cls = wc(w_abs, c); r1_cls = dc(d_r1, c); s1_cls = dc(d_s1, c)
+        w_abs = pv["tc"] - pv["bc"]
+        d_r1 = pv["r1"] - pv["tc"]
+        d_s1 = pv["bc"] - pv["s1"]
+        w_cls = wc(w_abs, c)
+        r1_cls = dc(d_r1, c)
+        s1_cls = dc(d_s1, c)
         inside = pv["bc"] <= c <= pv["tc"]
         pct_in = round((c - pv["bc"]) / w_abs * 100, 1) if (inside and w_abs > 0) else None
-        quality = "Good" if w_cls == "Narrow" and r1_cls != "Wide" and s1_cls != "Wide" else ("Skip" if w_cls == "Wide" else "Fair")
+        if w_cls == "Narrow" and r1_cls != "Wide" and s1_cls != "Wide":
+            quality = "Good"
+        elif w_cls == "Wide":
+            quality = "Skip"
+        else:
+            quality = "Fair"
         out.append({"sym": sym, "name": name, "c": c, "h": h, "l": l, "chg": chg, "pv": pv,
                     "w_abs": w_abs, "d_r1": d_r1, "d_s1": d_s1, "w_cls": w_cls,
                     "r1_cls": r1_cls, "s1_cls": s1_cls, "inside": inside, "pct_in": pct_in,
@@ -152,46 +174,51 @@ def format_msg(enriched, scanned_at, total):
     good = [d for d in inside if d["quality"] == "Good"]
     fair = [d for d in inside if d["quality"] == "Fair"]
     head = (f"<b>📊 Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n📈 <b>Scanned:</b> {total}\n"
-            f"✅ <b>Inside CPR:</b> {len(inside)}\n🟢 <b>Good:</b> {len(good)}\n"
-            f"🟡 <b>Fair:</b> {len(fair)}\n━━━━━━━━━━━━━━━━━━━━\n")
+            f"━━━━━━━━━━━━━━━━━━\n📈 Scanned: {total}\n"
+            f"✅ Inside CPR: {len(inside)}\n🟢 Good: {len(good)}\n🟡 Fair: {len(fair)}\n"
+            f"━━━━━━━━━━━━━━━━━━\n")
+
     def block(label, items, emoji):
-        if not items: return ""
-        lines = [f"\n<b>{emoji} {label} ({len(items)})</b>"]
+        if not items:
+            return ""
+        lines = [f"\n<b>{emoji} {label}</b>"]
         for d in items[:25]:
             lines.append(f"\n<b>{d['sym']}</b> ₹{d['c']:.2f} {d['chg']:+.2f}%\n"
-                         f"  • CPR: {d['w_cls']} ({d['w_pct']:.3f}%)\n"
-                         f"  • TC ₹{d['pv']['tc']:.2f} | BC ₹{d['pv']['bc']:.2f}\n"
-                         f"  • R1 ₹{d['pv']['r1']:.2f} ({d['r1_cls']}) | S1 ₹{d['pv']['s1']:.2f} ({d['s1_cls']})\n"
-                         f"  • In CPR: <b>{d['pct_in']}%</b>")
-        if len(items) > 25: lines.append(f"\n<i>… {len(items)-25} more</i>")
+                         f"  CPR: {d['w_cls']} ({d['w_pct']:.3f}%)\n"
+                         f"  TC ₹{d['pv']['tc']:.2f} | BC ₹{d['pv']['bc']:.2f}\n"
+                         f"  R1 ₹{d['pv']['r1']:.2f} | S1 ₹{d['pv']['s1']:.2f}\n"
+                         f"  In CPR: <b>{d['pct_in']}%</b>")
+        if len(items) > 25:
+            lines.append(f"\n<i>... {len(items)-25} more</i>")
         return "\n".join(lines) + "\n"
-    if not inside: return head + "\n<i>No inside CPR stocks today.</i>"
+
+    if not inside:
+        return head + "\n<i>No inside CPR stocks today.</i>"
     return head + block("GOOD SETUPS", good, "🟢") + block("FAIR SETUPS", fair, "🟡")
 
 
 def main():
     print("Inside CPR Scanner starting...")
-    print(f"Telegram configured: token={'yes' if TG_TOKEN else 'NO'} chat={'yes' if TG_CHAT else 'NO'}")
+    print(f"Telegram: token={'yes' if TG_TOKEN else 'NO'} chat={'yes' if TG_CHAT else 'NO'}")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
     scanned_at = ist.strftime("%a, %d %b %Y  %I:%M %p IST")
     print(f"Time: {scanned_at}")
     try:
         raw = chartink_scan()
     except Exception as e:
-        err = f"❌ <b>Scanner Error</b>\n<i>{scanned_at}</i>\n\n<code>{str(e)[:1500]}</code>"
-        print(err)
+        err = f"Scanner Error\n{scanned_at}\n\n{str(e)[:1000]}"
         send_tg(err)
+        print(err)
         sys.exit(1)
     rows = raw.get("data") or raw.get("stocks") or raw.get("result") or []
     print(f"Got {len(rows)} rows")
     if not rows:
-        send_tg(f"⚠️ Scanner ran but Chartink returned 0 stocks\n<i>{scanned_at}</i>")
+        send_tg(f"Scanner ran but returned 0 stocks\n{scanned_at}")
         return
     enriched = enrich(rows)
     msg = format_msg(enriched, scanned_at, len(rows))
-    if send_tg(msg): print("✅ done")
-    else: print("⚠️ telegram failed:\n" + msg)
+    if send_tg(msg):
+        print("done")
 
 
 if __name__ == "__main__":
