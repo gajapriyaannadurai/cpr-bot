@@ -1,94 +1,122 @@
 #!/usr/bin/env python3
 """
-Inside CPR Scanner — runs in GitHub Actions at 4 PM IST every weekday.
-Fetches Chartink screener, computes CPR levels, filters inside-CPR stocks,
-classifies setup quality, sends to Telegram, and exports cpr-watchlist.js
-for the Fyers bot to auto-load next morning.
+Inside CPR Scanner
+- Fetches Nifty 500 stock list automatically
+- Gets previous day OHLC from Yahoo Finance
+- Calculates CPR, R1, S1, PDH, PDL
+- Filters Inside CPR stocks
+- Exports cpr-watchlist.js for Fyers bot
+- Sends Telegram alert
 """
 
-import os, re, sys, json, datetime, requests
-
-try:
-    import cloudscraper
-    HAS_CLOUDSCRAPER = True
-except ImportError:
-    HAS_CLOUDSCRAPER = False
-
-# ── CONFIG ────────────────────────────────────────────────────────────────────
-SCREENER_URL = "https://chartink.com/screener/inside-cpr-2062"
-SCAN_URL     = "https://chartink.com/screener/scan_results"
+import os, json, datetime, time
+import requests
 
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID",   "").strip()
 
-# ── CHARTINK SCAN ─────────────────────────────────────────────────────────────
-def chartink_scan():
-    if HAS_CLOUDSCRAPER:
-        print("[scan] Using cloudscraper to bypass Cloudflare")
-        s = cloudscraper.create_scraper(
-            browser={'browser': 'chrome', 'platform': 'darwin', 'desktop': True}
-        )
-    else:
-        print("[scan] Using plain requests")
-        s = requests.Session()
+# ── NIFTY 500 STOCK LIST ──────────────────────────────────────────────────────
+NIFTY500 = [
+    "RELIANCE","TCS","HDFCBANK","BHARTIARTL","ICICIBANK","INFOSYS","SBIN","HINDUNILVR",
+    "ITC","LT","BAJFINANCE","HCLTECH","MARUTI","SUNPHARMA","ADANIENT","KOTAKBANK",
+    "TITAN","ONGC","NTPC","POWERGRID","ULTRACEMCO","AXISBANK","WIPRO","ADANIPORTS",
+    "BAJAJFINSV","JSWSTEEL","TATAMOTORS","TATASTEEL","COALINDIA","NESTLEIND",
+    "TECHM","GRASIM","HINDALCO","INDUSINDBK","DRREDDY","DIVISLAB","CIPLA","BPCL",
+    "BRITANNIA","EICHERMOT","HEROMOTOCO","APOLLOHOSP","TATACONSUM","BAJAJ-AUTO",
+    "SBILIFE","HDFCLIFE","ICICIPRULI","DABUR","PIDILITIND","BERGEPAINT",
+    "HAVELLS","MUTHOOTFIN","LUPIN","TORNTPHARM","BIOCON","AUROPHARMA","GLENMARK",
+    "CHOLAFIN","MFSL","LICI","DMART","NAUKRI","ZOMATO","PAYTM","POLICYBZR",
+    "IRCTC","INDIGO","SPICEJET","TATAPOWER","ADANIGREEN","ADANITRANS","ADANIWILMAR",
+    "SIEMENS","ABB","BHEL","BEL","HAL","CONCOR","RAILVIKAS","RVNL","IRFC",
+    "PFC","RECLTD","NHPC","SJVN","CANBK","BANKBARODA","PNB","UNIONBANK","INDIANB",
+    "FEDERALBNK","IDFCFIRSTB","BANDHANBNK","RBLBANK","YESBANK","KARURVYSYA",
+    "SOUTHBANK","DCBBANK","CUB","LAKSHVILAS","UJJIVAN","EQUITAS",
+    "MOTHERSON","BOSCHLTD","BHARATFORG","ENDURANCE","SUNDRMFAST","EXIDEIND",
+    "AMARARAJA","MINDA","CRAFTSMAN","SUPRAJIT","GABRIEL","JAMNA","WABCO",
+    "MRF","APOLLOTYRE","CEATLTD","BALKRISIND","TIINDIA",
+    "ASIANPAINT","INDIGO","SUPREMEIND","ASTRAL","FINOLEX","PRINCEPIPE",
+    "RELAXO","BATA","METRO","CAMPUS","KANSAINER","AKZOINDIA",
+    "PAGEIND","MANYAVAR","ABFRL","TRENT","SHOPERSTOP","VSTIND",
+    "MARICO","GODREJCP","EMAMILTD","COLPAL","JYOTHYLAB","GILLETTE",
+    "PGHH","VENKEYS","HATSUN","HERITAGE","PARAS","RADICO",
+    "EIHOTEL","LEMONTREE","CHALET","INDHOTEL","MAHINDCIE",
+    "VOLTAS","BLUESTARCO","WHIRLPOOL","SYMPHONY","CROMPTON","HAVELLS",
+    "POLYCAB","FINOLEX","KEI","KPITTECH","LTTS","MPHASIS","COFORGE",
+    "PERSISTENT","HEXAWARE","NIITTECH","RAMSYSCORP","ZENSAR","SONACOMS",
+    "TATAELXSI","CYIENT","MASTEK","ROUTE","TANLA","INTELLECT","OFSS",
+    "FSL","GRAPHITE","GSPL","GUJGASLTD","IGL","MGL","ATGL",
+    "CASTROLIND","AEGISLOG","HINDPETRO","IOC","MRPL","GAIL",
+    "DEEPAKNTR","GNFC","COROMANDEL","PIIND","BAYER","RALLIS","ASTERDM",
+    "FORTIS","MAXHEALTH","NARAYANA","METROPOLIS","THYROCARE","LALPATHLAB",
+    "AARTIIND","VINATIORGA","FINEORG","NAVINFLUOR","SUDARSCHEM","NOCIL",
+    "ALKYLAMINE","AMARAJABAT","CROMPTON","ORIENTELEC","BATAINDIA",
+    "VGUARD","BAJAJELEC","ORIENTCEM","JKCEMENT","RAMCOCEM","HEIDELBERG",
+    "DALBHARAT","BIRLACORPN","PRISMJOHNS","AMBUJACEM","ACC","SHREECEM",
+    "SAIL","NMDC","MOIL","HINDZINC","VEDL","NATIONALUM","WELCORP",
+    "RATNAMANI","APL","JINDALSAW","MAHSEAMLES","ISMT","GHCL",
+    "TRIDENT","VARDHMAN","NIITLTD","SYNGENE","SUVEN","SEQUENT",
+    "GRANULES","SOLARA","IPCA","ALKEM","NATCOPHARM","AJANTPHARM",
+    "IPCALAB","LAURUSLABS","STRIDES","GLAND","ERIS","JUBLPHARMA",
+]
 
-    s.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-    })
+# Remove duplicates
+NIFTY500 = list(dict.fromkeys(NIFTY500))
 
-    try:
-        s.get("https://chartink.com/", timeout=30)
-    except Exception:
-        pass
+# ── YAHOO FINANCE FETCH ───────────────────────────────────────────────────────
+def fetch_ohlc(symbols, max_retries=3):
+    """Fetch previous day OHLC from Yahoo Finance for all symbols."""
+    results = {}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+    }
 
-    r = s.get(SCREENER_URL, timeout=30)
-    r.raise_for_status()
-    html = r.text
+    for sym in symbols:
+        yahoo_sym = f"{sym}.NS"
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_sym}?interval=1d&range=5d"
 
-    csrf = ""
-    for pat in [r'<meta name="csrf-token" content="([^"]+)"', r'"csrf-token"\s+content="([^"]+)"']:
-        m = re.search(pat, html)
-        if m:
-            csrf = m.group(1)
-            break
+        for attempt in range(max_retries):
+            try:
+                r = requests.get(url, headers=headers, timeout=10)
+                if r.status_code != 200:
+                    time.sleep(0.5)
+                    continue
 
-    clause = ""
-    for pat in [r'"scan_clause"\s*:\s*"([^"]+)"', r"'scan_clause'\s*:\s*'([^']+)'",
-                r'id=["\'](scan_clause)["\'][^>]*value=["\']([^"\']+)["\']']:
-        m = re.search(pat, html)
-        if m:
-            clause = m.group(1) if len(m.groups()) == 1 else m.group(2)
-            break
+                data = r.json()
+                chart = data.get("chart", {})
+                result = chart.get("result", [])
+                if not result:
+                    break
 
-    if not csrf:
-        raise RuntimeError("Could not get CSRF token from Chartink")
-    if not clause:
-        raise RuntimeError("Could not get scan_clause from Chartink")
+                quotes = result[0].get("indicators", {}).get("quote", [{}])[0]
+                timestamps = result[0].get("timestamp", [])
 
-    r = s.post(
-        SCAN_URL,
-        data={"scan_clause": clause},
-        headers={
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRF-Token": csrf,
-            "Referer": SCREENER_URL,
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Origin": "https://chartink.com",
-        },
-        timeout=30,
-    )
-    r.raise_for_status()
-    return r.json()
+                if not timestamps or len(timestamps) < 2:
+                    break
+
+                # Get previous day (second last candle)
+                idx = -2
+                h = quotes.get("high",  [])[idx]
+                l = quotes.get("low",   [])[idx]
+                c = quotes.get("close", [])[idx]
+                o = quotes.get("open",  [])[idx]
+
+                if h and l and c and o:
+                    results[sym] = {"h": round(h,2), "l": round(l,2),
+                                    "c": round(c,2), "o": round(o,2)}
+                break
+
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"[yahoo] ❌ {sym}: {e}")
+                time.sleep(0.5)
+
+        time.sleep(0.15)  # rate limit
+
+    return results
 
 
-# ── CPR MATH ──────────────────────────────────────────────────────────────────
+# ── CPR CALCULATION ───────────────────────────────────────────────────────────
 def calc_cpr(h, l, c):
     pp = (h + l + c) / 3
     bc = (h + l) / 2
@@ -101,260 +129,197 @@ def calc_cpr(h, l, c):
         "s2": pp - (h - l),
     }
 
-def width_class(v, price):
-    p = (v / price) * 100
-    return "Narrow" if p < 0.3 else ("Medium" if p < 0.8 else "Wide")
+def width_pct(tc, bc, price):
+    return ((tc - bc) / price) * 100
 
-def dist_class(v, price):
-    p = (v / price) * 100
-    return "Narrow" if p < 1.0 else ("Medium" if p < 2.0 else "Wide")
-
-def enrich(rows):
-    out = []
-    for r in rows:
-        sym  = r.get("nsecode") or r.get("symbol") or ""
-        name = r.get("company_name") or r.get("name") or sym
-        try:
-            c   = float(r.get("close", 0))
-            h   = float(r.get("high",  0))
-            l   = float(r.get("low",   0))
-            chg = float(r.get("per_chg") or r.get("change_pct") or 0)
-        except (ValueError, TypeError):
-            continue
-        if not (c and h and l):
-            continue
-
-        pv    = calc_cpr(h, l, c)
+def classify(enriched):
+    results = []
+    for sym, d in enriched.items():
+        h, l, c = d["h"], d["l"], d["c"]
+        pv = calc_cpr(h, l, c)
         w_abs = pv["tc"] - pv["bc"]
-        d_r1  = pv["r1"] - pv["tc"]
-        d_s1  = pv["bc"] - pv["s1"]
+        w_pct = width_pct(pv["tc"], pv["bc"], c)
 
-        w_cls  = width_class(w_abs, c)
-        r1_cls = dist_class(d_r1, c)
-        s1_cls = dist_class(d_s1, c)
+        # Inside CPR: close is between BC and TC
         inside = pv["bc"] <= c <= pv["tc"]
         pct_in = round((c - pv["bc"]) / w_abs * 100, 1) if (inside and w_abs > 0) else None
 
-        if w_cls == "Narrow" and r1_cls != "Wide" and s1_cls != "Wide":
+        # Quality classification
+        if w_pct < 0.3:
             quality = "Good"
-        elif w_cls == "Wide":
-            quality = "Skip"
-        else:
+        elif w_pct < 0.8:
             quality = "Fair"
+        else:
+            quality = "Skip"
 
-        out.append({
-            "sym": sym, "name": name, "c": c, "h": h, "l": l, "chg": chg,
-            "pv": pv, "w_abs": w_abs, "d_r1": d_r1, "d_s1": d_s1,
-            "w_cls": w_cls, "r1_cls": r1_cls, "s1_cls": s1_cls,
-            "inside": inside, "pct_in": pct_in, "quality": quality,
-            "w_pct": round((w_abs / c) * 100, 3),
-        })
+        if inside and quality != "Skip":
+            results.append({
+                "sym":     sym,
+                "c":       c,
+                "h":       h,
+                "l":       l,
+                "pv":      pv,
+                "w_pct":   round(w_pct, 3),
+                "quality": quality,
+                "pct_in":  pct_in,
+            })
 
-    out.sort(key=lambda x: (not x["inside"], x["w_pct"]))
-    return out
+    results.sort(key=lambda x: (x["quality"] != "Good", x["w_pct"]))
+    return results
 
 
-# ── EXPORT cpr-watchlist.js ───────────────────────────────────────────────────
-def export_watchlist(enriched, scan_date):
-    """
-    Generates cpr-watchlist.js — Fyers bot auto-downloads this every morning.
-    Only exports Good + Fair inside CPR stocks.
-    """
-    inside = [d for d in enriched if d["inside"] and d["quality"] != "Skip"]
-
-    if not inside:
-        print("[export] No inside CPR stocks to export")
-        return None
+# ── EXPORT WATCHLIST ──────────────────────────────────────────────────────────
+def export_watchlist(stocks, scan_date):
+    if not stocks:
+        print("[export] No stocks to export")
+        return 0
 
     lines = [
         "/**",
         f" * cpr-watchlist.js — Auto-generated by Inside CPR Scanner",
         f" * Scan date: {scan_date}",
-        f" * Total stocks: {len(inside)}",
-        " * This file is auto-loaded by the Fyers CPR Bot every morning.",
+        f" * Total stocks: {len(stocks)}",
         " */",
         "",
         "const stocks = [",
     ]
 
-    for d in inside:
-        sym    = d["sym"]
-        pv     = d["pv"]
-        c      = d["c"]
-        h      = d["h"]
-        l      = d["l"]
-        tcp    = round(pv["tc"], 2)
-        bcp    = round(pv["bc"], 2)
-        r1     = round(pv["r1"], 2)
-        s1     = round(pv["s1"], 2)
-        pdh    = round(h, 2)
-        pdl    = round(l, 2)
-        prev_c = round(c, 2)
+    for d in stocks:
+        sym = d["sym"]
+        pv  = d["pv"]
+        lines += [
+            f"  {{",
+            f"    sym:       'NSE:{sym}-EQ',",
+            f"    prevClose: {d['c']},",
+            f"    openPrice: null,",
+            f"    tcp:       {round(pv['tc'],2)},",
+            f"    bcp:       {round(pv['bc'],2)},",
+            f"    r1:        {round(pv['r1'],2)},",
+            f"    s1:        {round(pv['s1'],2)},",
+            f"    pdh:       {d['h']},",
+            f"    pdl:       {d['l']},",
+            f"    gapType:   null,",
+            f"  }},",
+        ]
 
-        lines.append(f"  {{")
-        lines.append(f"    sym:       'NSE:{sym}-EQ',")
-        lines.append(f"    prevClose: {prev_c},")
-        lines.append(f"    openPrice: null,   // filled automatically at 9:15 AM")
-        lines.append(f"    tcp:       {tcp},")
-        lines.append(f"    bcp:       {bcp},")
-        lines.append(f"    r1:        {r1},")
-        lines.append(f"    s1:        {s1},")
-        lines.append(f"    pdh:       {pdh},")
-        lines.append(f"    pdl:       {pdl},")
-        lines.append(f"    gapType:   null,   // auto-detected at open")
-        lines.append(f"  }},")
+    lines += [
+        "];",
+        "",
+        "const GAP_THRESHOLD = require('./config').GAP_THRESHOLD_PCT || 0.5;",
+        "stocks.forEach(s => {",
+        "  if (s.gapType === null && s.prevClose && s.openPrice) {",
+        "    const pct = ((s.openPrice - s.prevClose) / s.prevClose) * 100;",
+        "    if (pct >= GAP_THRESHOLD)       s.gapType = 'up';",
+        "    else if (pct <= -GAP_THRESHOLD) s.gapType = 'down';",
+        "  }",
+        "});",
+        "",
+        "module.exports = { stocks };",
+    ]
 
-    lines.append("];")
-    lines.append("")
-    lines.append("// Auto-detect gap type from prevClose vs openPrice")
-    lines.append("const GAP_THRESHOLD = require('./config').GAP_THRESHOLD_PCT || 0.5;")
-    lines.append("stocks.forEach(s => {")
-    lines.append("  if (s.gapType === null && s.prevClose && s.openPrice) {")
-    lines.append("    const pct = ((s.openPrice - s.prevClose) / s.prevClose) * 100;")
-    lines.append("    if (pct >= GAP_THRESHOLD)       s.gapType = 'up';")
-    lines.append("    else if (pct <= -GAP_THRESHOLD) s.gapType = 'down';")
-    lines.append("  }")
-    lines.append("});")
-    lines.append("")
-    lines.append("module.exports = { stocks };")
-
-    content = "\n".join(lines)
-
-    # Save to repo root — GitHub Actions will commit this
     os.makedirs("exports", exist_ok=True)
-    fpath = "exports/cpr-watchlist.js"
-    with open(fpath, "w") as f:
-        f.write(content)
+    with open("exports/cpr-watchlist.js", "w") as f:
+        f.write("\n".join(lines))
 
-    print(f"[export] ✅ Exported {len(inside)} stocks to {fpath}")
-    return fpath, len(inside), inside
+    print(f"[export] ✅ Exported {len(stocks)} stocks to exports/cpr-watchlist.js")
+    return len(stocks)
 
 
 # ── TELEGRAM ──────────────────────────────────────────────────────────────────
 def send_telegram(text):
     if not (TG_TOKEN and TG_CHAT):
-        print("[telegram] credentials missing — skipping send")
-        return False
+        print("[telegram] No credentials — skipping")
+        return
     chunks = [text[i:i+3800] for i in range(0, len(text), 3800)]
     for chunk in chunks:
-        r = requests.post(
-            f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-            data={"chat_id": TG_CHAT, "text": chunk, "parse_mode": "HTML",
-                  "disable_web_page_preview": "true"},
-            timeout=15,
-        )
-        if not r.ok:
-            print(f"[telegram] error: {r.status_code} {r.text}")
-            return False
-    return True
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+                data={"chat_id": TG_CHAT, "text": chunk,
+                      "parse_mode": "HTML", "disable_web_page_preview": "true"},
+                timeout=15,
+            )
+        except Exception as e:
+            print(f"[telegram] Error: {e}")
 
 
 # ── FORMAT MESSAGE ────────────────────────────────────────────────────────────
-def format_message(enriched, scanned_at, total):
-    inside = [d for d in enriched if d["inside"]]
-    good   = [d for d in inside if d["quality"] == "Good"]
-    fair   = [d for d in inside if d["quality"] == "Fair"]
+def format_message(stocks, scanned_at, total_fetched, exported):
+    good = [s for s in stocks if s["quality"] == "Good"]
+    fair = [s for s in stocks if s["quality"] == "Fair"]
 
     head = (
         f"<b>📊 Inside CPR Scanner</b>\n"
         f"<i>{scanned_at}</i>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"📈 <b>Total scanned:</b>   {total}\n"
-        f"✅ <b>Inside CPR:</b>      {len(inside)}\n"
-        f"🟢 <b>Good setups:</b>    {len(good)}\n"
-        f"🟡 <b>Fair setups:</b>    {len(fair)}\n"
+        f"📈 <b>Nifty 500 scanned:</b> {total_fetched}\n"
+        f"✅ <b>Inside CPR:</b>        {len(stocks)}\n"
+        f"🟢 <b>Good setups:</b>      {len(good)}\n"
+        f"🟡 <b>Fair setups:</b>      {len(fair)}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
     )
 
     def block(label, items, emoji):
-        if not items:
-            return ""
-        lines = [f"\n<b>{emoji} {label.upper()} ({len(items)})</b>"]
-        for d in items[:25]:
-            chg  = f"{d['chg']:+.2f}%"
-            line = (
-                f"\n<b>{d['sym']}</b>  ₹{d['c']:.2f}  {chg}\n"
-                f"  • CPR: TC ₹{d['pv']['tc']:.2f}  BC ₹{d['pv']['bc']:.2f}  Width: {d['w_cls']} ({d['w_pct']:.3f}%)\n"
-                f"  • R1: ₹{d['pv']['r1']:.2f} ({d['r1_cls']}) | S1: ₹{d['pv']['s1']:.2f} ({d['s1_cls']})\n"
-                f"  • PDH: ₹{d['h']:.2f} | PDL: ₹{d['l']:.2f}\n"
-                f"  • % in CPR: <b>{d['pct_in']}%</b>"
+        if not items: return ""
+        lines = [f"\n<b>{emoji} {label} ({len(items)})</b>"]
+        for d in items[:20]:
+            lines.append(
+                f"\n<b>{d['sym']}</b>  ₹{d['c']:.2f}\n"
+                f"  CPR: TC ₹{d['pv']['tc']:.2f}  BC ₹{d['pv']['bc']:.2f}  ({d['w_pct']:.3f}%)\n"
+                f"  R1: ₹{d['pv']['r1']:.2f}  S1: ₹{d['pv']['s1']:.2f}\n"
+                f"  PDH: ₹{d['h']:.2f}  PDL: ₹{d['l']:.2f}\n"
+                f"  % in CPR: <b>{d['pct_in']}%</b>"
             )
-            lines.append(line)
-        if len(items) > 25:
-            lines.append(f"\n<i>… {len(items)-25} more not shown</i>")
+        if len(items) > 20:
+            lines.append(f"<i>+{len(items)-20} more</i>")
         return "\n".join(lines) + "\n"
 
-    if not inside:
-        return head + "\n<i>No inside CPR stocks found today.</i>"
+    body  = block("GOOD SETUPS", good, "🟢")
+    body += block("FAIR SETUPS", fair, "🟡")
 
-    body  = block("Good setups", good, "🟢")
-    body += block("Fair setups", fair, "🟡")
-    return head + body + "\n<i>Trade safe! 📈</i>"
+    if not stocks:
+        body = "\n<i>No inside CPR stocks found today.</i>"
+
+    footer = (
+        f"\n━━━━━━━━━━━━━━━━━━━━\n"
+        f"📥 <b>Fyers Bot Watchlist exported!</b>\n"
+        f"<i>{exported} stocks ready for tomorrow</i>\n"
+        f"<i>Fyers bot auto-loads at 9:00 AM ✅</i>\n"
+        f"<i>Trade safe! 📈</i>"
+    )
+
+    return head + body + footer
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
-    print("Inside CPR Scanner — starting…")
+    print("Inside CPR Scanner — starting...")
     ist_now    = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
     scanned_at = ist_now.strftime("%a, %d %b %Y  %I:%M %p IST")
     scan_date  = ist_now.strftime("%Y-%m-%d")
     print(f"Time: {scanned_at}")
+    print(f"Fetching OHLC for {len(NIFTY500)} Nifty 500 stocks from Yahoo Finance...")
 
-    try:
-        raw = chartink_scan()
-    except Exception as e:
-        err = f"❌ <b>Scanner Error</b>\n<i>{scanned_at}</i>\n\n<code>{e}</code>"
-        print(err)
-        send_telegram(err)
-        sys.exit(1)
+    ohlc = fetch_ohlc(NIFTY500)
+    print(f"Fetched: {len(ohlc)} stocks")
 
-    rows = raw.get("data") or raw.get("stocks") or raw.get("result") or []
-    print(f"Got {len(rows)} rows from Chartink")
-
-    if not rows:
-        msg = (
-            f"⚠️ <b>Inside CPR Scanner</b>\n<i>{scanned_at}</i>\n\n"
-            f"Chartink returned 0 stocks.\nResponse keys: {list(raw.keys())}"
-        )
+    if not ohlc:
+        msg = f"❌ <b>CPR Scanner Error</b>\n<i>{scanned_at}</i>\n\nCould not fetch any data from Yahoo Finance."
         send_telegram(msg)
-        print("No stocks returned.")
         return
 
-    enriched = enrich(rows)
+    stocks = classify(ohlc)
+    print(f"Inside CPR stocks: {len(stocks)}")
 
-    # ── Export watchlist for Fyers bot ──
-    export_result = export_watchlist(enriched, scan_date)
+    exported = export_watchlist(stocks, scan_date)
 
-    # ── Send Telegram message ──
-    msg = format_message(enriched, scanned_at, len(rows))
-
-    # Add export summary to Telegram message
-    if export_result:
-        fpath, count, inside = export_result
-        syms = ", ".join(d["sym"] for d in inside[:10])
-        if len(inside) > 10:
-            syms += f" +{len(inside)-10} more"
-        msg += (
-            f"\n━━━━━━━━━━━━━━━━━━━━\n"
-            f"📥 <b>Fyers Bot Watchlist exported!</b>\n"
-            f"<i>{count} stocks ready for tomorrow:</i>\n"
-            f"<code>{syms}</code>\n"
-            f"<i>Fyers bot will auto-load at 9:00 AM ✅</i>"
-        )
-
-    # ── Save history snapshot ──
     os.makedirs("history", exist_ok=True)
-    fname = f"history/scan_{scan_date}.json"
-    with open(fname, "w") as f:
-        json.dump({"scanned_at": scanned_at, "total": len(rows), "data": enriched}, f, indent=2)
-    print(f"Saved {fname}")
+    with open(f"history/scan_{scan_date}.json", "w") as f:
+        json.dump({"scanned_at": scanned_at, "total": len(ohlc), "stocks": stocks}, f, indent=2)
 
-    if send_telegram(msg):
-        print("✅ Sent to Telegram")
-    else:
-        print("⚠️ Telegram send failed")
-        print(msg)
-
+    msg = format_message(stocks, scanned_at, len(ohlc), exported)
+    send_telegram(msg)
+    print("✅ Done!")
 
 if __name__ == "__main__":
     main()
