@@ -2,8 +2,8 @@ name: Inside CPR Scanner
 
 on:
   schedule:
-    - cron: '30 10 * * 1-5'
-  workflow_dispatch:
+    - cron: '30 10 * * 1-5'   # 4:00 PM IST Mon–Fri
+  workflow_dispatch:            # Manual trigger from Actions tab
 
 permissions:
   contents: write
@@ -21,18 +21,18 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests yfinance pandas Pillow
+        run: pip install requests cloudscraper
 
       - name: Run scanner
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scan.py
+        run: python scripts/scan.py
 
-      - name: Commit history
+      - name: Commit exports and history
         run: |
           git config user.name  "CPR Bot"
           git config user.email "cpr-bot@github-actions"
-          git add history/ || true
-          git diff --staged --quiet || git commit -m "Scan $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git add exports/ history/ || true
+          git diff --staged --quiet || git commit -m "Scan + Watchlist Export $(date -u +'%Y-%m-%d %H:%M UTC')"
           git push || true
