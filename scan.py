@@ -343,10 +343,9 @@ def main():
     # ── Send image to Telegram (unchanged) ──
     img_buf = make_poster(syms, tomorrow_label)
     caption = (
-        f"<b>Inside CPR Stock List</b>\n"
-        f"For next trading session: <b>{tomorrow_label}</b>\n\n"
-        f"📥 <b>Fyers bot watchlist exported — {exported} stocks ready for tomorrow ✅</b>"
-    )
+    f"<b>Inside CPR Stock List</b>\n"
+    f"For next trading session: <b>{tomorrow_label}</b>"
+)
     send_tg_photo(img_buf, caption)
 
 
