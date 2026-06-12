@@ -2,7 +2,13 @@ name: Inside CPR Scanner
 
 on:
   schedule:
-    - cron: '30 10 * * 1-5'
+    # Multiple cron schedules to bypass GitHub Actions delay issues
+    # All times in UTC. IST = UTC + 5:30
+    - cron: '15 10 * * 1-5'   # 3:45 PM IST
+    - cron: '30 10 * * 1-5'   # 4:00 PM IST
+    - cron: '45 10 * * 1-5'   # 4:15 PM IST
+    - cron: '0 11 * * 1-5'    # 4:30 PM IST
+    - cron: '30 3 * * 1-5'    # 9:00 AM IST (morning backup before market opens)
   workflow_dispatch:
 
 permissions:
@@ -23,13 +29,33 @@ jobs:
       - name: Install dependencies
         run: pip install requests yfinance pandas Pillow
 
+      - name: Check if already scanned today
+        id: check
+        run: |
+          if [ -f "exports/cpr-watchlist.js" ]; then
+            FILE_DATE=$(grep -oP 'Scan date: \K[0-9-]+' exports/cpr-watchlist.js || echo "none")
+            TODAY=$(TZ='Asia/Kolkata' date +%Y-%m-%d)
+            echo "File date: $FILE_DATE"
+            echo "Today IST: $TODAY"
+            if [ "$FILE_DATE" = "$TODAY" ]; then
+              echo "skip=true" >> $GITHUB_OUTPUT
+              echo "Already scanned today — skipping"
+            else
+              echo "skip=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run scanner
+        if: steps.check.outputs.skip != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scan.py
 
       - name: Commit exports
+        if: steps.check.outputs.skip != 'true'
         run: |
           git config user.name "CPR Bot"
           git config user.email "cpr-bot@github-actions"
