@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — branded poster image to Telegram + exports cpr-watchlist.js for Fyers bot."""
-import os, sys, io, datetime, requests
+"""Inside CPR Scanner — sends branded poster via Gmail."""
+import os, sys, io, json, datetime, smtplib
 import yfinance as yf
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 
-TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+GMAIL_ADDRESS      = os.environ.get("GMAIL_ADDRESS", "").strip()
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+REPORT_RECIPIENT   = os.environ.get("REPORT_RECIPIENT", "").strip()
 
 # Brand customisation
 BRAND_NAME    = "STARK SCHOOL OF FINANCE"
@@ -14,7 +18,7 @@ BRAND_TAGLINE = "Happy Price Action Trading"
 BRAND_FOOTER  = "www.tradingwithgp.com"
 LOGO_FILE     = "logo (Logo).png"
 
-# Brand colors (from logo)
+# Brand colors
 NAVY      = (26, 40, 71)
 GREEN     = (45, 138, 78)
 GREEN_LT  = (140, 205, 165)
@@ -51,45 +55,69 @@ HINDCOPPER SBFC HFCL KPRMILL FIVESTAR THERMAX KAJARIACER MEDPLUS
 """.split()
 
 
-def _chat_ids():
-    return [c.strip() for c in TG_CHAT.split(",") if c.strip()]
+def _recipients():
+    return [r.strip() for r in REPORT_RECIPIENT.split(",") if r.strip()]
 
 
-def send_tg_text(text):
-    for chat_id in _chat_ids():
-        try:
-            requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-                data={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}, timeout=15)
-        except Exception as e:
-            print(f"[tg] text error for {chat_id}: {e}")
+def send_email_text(subject, body):
+    if not (GMAIL_ADDRESS and GMAIL_APP_PASSWORD and REPORT_RECIPIENT):
+        print("[email] missing credentials")
+        return False
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = GMAIL_ADDRESS
+        msg["To"] = ", ".join(_recipients())
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html"))
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_ADDRESS, _recipients(), msg.as_string())
+        print("[email] text sent ok")
+        return True
+    except Exception as e:
+        print(f"[email] error: {e}")
+        return False
 
 
-def send_tg_photo(image_bytes, caption):
-    image_bytes_data = image_bytes.read()
-    sent_to = 0
-    for chat_id in _chat_ids():
-        try:
-            r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
-                data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
-                files={"photo": ("inside_cpr.png", image_bytes_data, "image/png")}, timeout=30)
-            if r.ok:
-                sent_to += 1
-                print(f"[tg] photo sent to {chat_id}")
-            else:
-                print(f"[tg] error for {chat_id}: {r.status_code} {r.text[:200]}")
-        except Exception as e:
-            print(f"[tg] photo error for {chat_id}: {e}")
-    return sent_to > 0
+def send_email_photo(image_bytes, subject, body):
+    if not (GMAIL_ADDRESS and GMAIL_APP_PASSWORD and REPORT_RECIPIENT):
+        print("[email] missing credentials")
+        return False
+    try:
+        image_data = image_bytes.read()
+        msg = MIMEMultipart()
+        msg["From"] = GMAIL_ADDRESS
+        msg["To"] = ", ".join(_recipients())
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html"))
+
+        img_attachment = MIMEImage(image_data, name="inside_cpr.png")
+        img_attachment.add_header("Content-Disposition", "attachment", filename="inside_cpr.png")
+        msg.attach(img_attachment)
+
+        # Also embed inline for email clients that show images
+        img_inline = MIMEImage(image_data)
+        img_inline.add_header("Content-ID", "<poster>")
+        img_inline.add_header("Content-Disposition", "inline", filename="inside_cpr.png")
+        msg.attach(img_inline)
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_ADDRESS, _recipients(), msg.as_string())
+        print(f"[email] photo sent to {_recipients()}")
+        return True
+    except Exception as e:
+        print(f"[email] photo error: {e}")
+        return False
 
 
 def calc_cpr(h, l, c):
     pp = (h + l + c) / 3
     bc = (h + l) / 2
     tc = 2 * pp - bc
-    return {"upper": max(tc, bc), "lower": min(tc, bc), "width": abs(tc - bc),
-            "tc": tc, "bc": bc, "pp": pp,
-            "r1": round(2 * pp - l, 2),
-            "s1": round(2 * pp - h, 2)}
+    return {"upper": max(tc, bc), "lower": min(tc, bc), "width": abs(tc - bc)}
 
 
 def font(size, bold=True):
@@ -206,86 +234,46 @@ def make_poster(stocks, target_date):
     return buf
 
 
-# ── NEW: Export cpr-watchlist.js for Fyers bot ────────────────────────────────
-def export_watchlist(inside_stocks, df, scan_date):
-    """
-    Exports cpr-watchlist.js with full CPR levels for each inside CPR stock.
-    Fyers bot auto-downloads this every morning at 9:00 AM.
-    """
-    if not inside_stocks:
-        print("[export] No stocks to export")
-        return 0
-
+def export_watchlist_js(stocks_data, target_date):
+    """Save the structured watchlist for downstream tools (Fyers bot etc)."""
+    os.makedirs("exports", exist_ok=True)
     lines = [
         "/**",
-        f" * cpr-watchlist.js — Auto-generated by Inside CPR Scanner",
-        f" * Scan date: {scan_date}",
-        f" * Total stocks: {len(inside_stocks)}",
+        " * cpr-watchlist.js — Auto-generated by Inside CPR Scanner",
+        f" * Scan date: {datetime.datetime.now().strftime('%Y-%m-%d')}",
+        f" * Total stocks: {len(stocks_data)}",
         " * Auto-loaded by Fyers CPR Bot every morning at 9:00 AM.",
         " */",
         "",
         "const stocks = [",
     ]
+    for s in stocks_data:
+        lines.append("  {")
+        lines.append(f"    sym:       'NSE:{s['sym']}-EQ',")
+        lines.append(f"    prevClose: {s['c']:.2f},")
+        lines.append(f"    openPrice: null,")
+        lines.append(f"    tcp:       {s['pv']['upper']:.2f},")
+        lines.append(f"    bcp:       {s['pv']['lower']:.2f},")
+        lines.append(f"    r1:        {s['pv']['r1']:.2f},")
+        lines.append(f"    s1:        {s['pv']['s1']:.2f},")
+        lines.append(f"    pdh:       {s['pdh']:.2f},")
+        lines.append(f"    pdl:       {s['pdl']:.2f},")
+        lines.append(f"    gapType:   null,")
+        lines.append("  },")
+    lines.append("];")
+    lines.append("")
+    lines.append("module.exports = stocks;")
 
-    for item in inside_stocks:
-        sym = item["sym"]
-        ts  = f"{sym}.NS"
-        try:
-            stock_df = df[ts].dropna(how="any")
-            if len(stock_df) < 1:
-                continue
-            day = stock_df.iloc[-1]
-            h   = round(float(day["High"]),  2)
-            l   = round(float(day["Low"]),   2)
-            c   = round(float(day["Close"]), 2)
-            cpr = calc_cpr(h, l, c)
-
-            lines += [
-                f"  {{",
-                f"    sym:       'NSE:{sym}-EQ',",
-                f"    prevClose: {c},",
-                f"    openPrice: null,",
-                f"    tcp:       {round(cpr['tc'], 2)},",
-                f"    bcp:       {round(cpr['bc'], 2)},",
-                f"    r1:        {cpr['r1']},",
-                f"    s1:        {cpr['s1']},",
-                f"    pdh:       {h},",
-                f"    pdl:       {l},",
-                f"    gapType:   null,",
-                f"  }},",
-            ]
-        except Exception as e:
-            print(f"[export] Skipping {sym}: {e}")
-            continue
-
-    lines += [
-        "];",
-        "",
-        "const GAP_THRESHOLD = require('./config').GAP_THRESHOLD_PCT || 0.5;",
-        "stocks.forEach(s => {",
-        "  if (s.gapType === null && s.prevClose && s.openPrice) {",
-        "    const pct = ((s.openPrice - s.prevClose) / s.prevClose) * 100;",
-        "    if (pct >= GAP_THRESHOLD)       s.gapType = 'up';",
-        "    else if (pct <= -GAP_THRESHOLD) s.gapType = 'down';",
-        "  }",
-        "});",
-        "",
-        "module.exports = { stocks };",
-    ]
-
-    os.makedirs("exports", exist_ok=True)
     with open("exports/cpr-watchlist.js", "w") as f:
         f.write("\n".join(lines))
-
-    print(f"[export] ✅ Exported {len(inside_stocks)} stocks to exports/cpr-watchlist.js")
-    return len(inside_stocks)
+    print(f"[export] ✅ Exported {len(stocks_data)} stocks to exports/cpr-watchlist.js")
 
 
 def main():
     print("Starting scan...")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
     print(f"Time: {ist.strftime('%a %d %b %Y %I:%M %p IST')}")
-    scan_date = ist.strftime("%Y-%m-%d")
+    print(f"Email configured: gmail={'yes' if GMAIL_ADDRESS else 'NO'} pass={'yes' if GMAIL_APP_PASSWORD else 'NO'} to={'yes' if REPORT_RECIPIENT else 'NO'}")
 
     tickers = [f"{s}.NS" for s in STOCKS]
     print(f"Downloading {len(tickers)} tickers...")
@@ -293,9 +281,11 @@ def main():
         df = yf.download(tickers, period="10d", group_by='ticker',
                          auto_adjust=False, progress=False, threads=True, timeout=90)
     except Exception as e:
-        send_tg_text(f"yfinance error: {e}"); sys.exit(1)
+        send_email_text("CPR Scanner Error", f"yfinance error: {e}")
+        sys.exit(1)
     if df is None or df.empty:
-        send_tg_text("yfinance returned empty data"); sys.exit(1)
+        send_email_text("CPR Scanner Error", "yfinance returned empty data")
+        sys.exit(1)
 
     print("Processing...")
     inside = []
@@ -323,30 +313,49 @@ def main():
             if (tomorrow_cpr['upper'] <= today_cpr['upper'] and
                 tomorrow_cpr['lower'] >= today_cpr['lower']):
                 w_pct = (tomorrow_cpr['width'] / float(day_today['Close'])) * 100
-                inside.append({'sym': sym, 'w_pct': w_pct})
+                pp = (float(day_today['High']) + float(day_today['Low']) + float(day_today['Close'])) / 3
+                r1 = 2 * pp - float(day_today['Low'])
+                s1 = 2 * pp - float(day_today['High'])
+                tomorrow_cpr['r1'] = r1
+                tomorrow_cpr['s1'] = s1
+                inside.append({
+                    'sym': sym,
+                    'w_pct': w_pct,
+                    'c': float(day_today['Close']),
+                    'pv': tomorrow_cpr,
+                    'pdh': float(day_today['High']),
+                    'pdl': float(day_today['Low']),
+                })
         except Exception:
             continue
 
     inside.sort(key=lambda x: x['w_pct'])
     print(f"Found {len(inside)} inside CPR stocks")
 
-    # ── Export watchlist for Fyers bot (NEW) ──
-    exported = export_watchlist(inside, df, scan_date)
-
     if not inside:
-        send_tg_text(f"<b>Inside CPR Stock List</b>\nFor: {tomorrow_label}\n\nNo inside CPR stocks today.")
+        send_email_text(
+            f"Inside CPR Stock List — {tomorrow_label}",
+            f"<b>Inside CPR Stock List</b><br>For: {tomorrow_label}<br><br>No inside CPR stocks today."
+        )
         return
 
     syms = [s['sym'] for s in inside]
     print(f"Stocks: {syms}")
 
-    # ── Send image to Telegram (unchanged) ──
+    # Export JS watchlist for downstream tools (signal bot etc)
+    export_watchlist_js(inside, tomorrow_label)
+
+    # Generate and send poster image via email
     img_buf = make_poster(syms, tomorrow_label)
-    caption = (
-    f"<b>Inside CPR Stock List</b>\n"
-    f"For next trading session: <b>{tomorrow_label}</b>"
-)
-    send_tg_photo(img_buf, caption)
+    subject = f"📊 Inside CPR Stock List — {tomorrow_label}"
+    body = (
+        f"<h2>Inside CPR Stock List</h2>"
+        f"<p>For next trading session: <b>{tomorrow_label}</b></p>"
+        f"<p>Total stocks: <b>{len(syms)}</b></p>"
+        f"<p>See attached poster image.</p>"
+        f"<p><i>Happy Price Action Trading 📈</i></p>"
+    )
+    send_email_photo(img_buf, subject, body)
 
 
 if __name__ == "__main__":
