@@ -312,7 +312,8 @@ def main():
                     datetime.date(2025, 4, 18),   # Good Friday
                     datetime.date(2025, 5, 1),    # Maharashtra Day
                     datetime.date(2025, 6, 7),    # Shri Guru Granth Sahib Ji birthday
-                    datetime.date(2025, 6, 26),   # Eid al-Adha (Bakri Eid)
+                    datetime.date(2025, 6, 26),   # Eid al-Adha (Bakri Eid) - Thu
+                    datetime.date(2025, 6, 27),   # Eid al-Adha (Bakri Eid) - Fri
                     datetime.date(2025, 8, 15),   # Independence Day
                     datetime.date(2025, 8, 27),   # Ganesh Chaturthi
                     datetime.date(2025, 10, 2),   # Gandhi Jayanti
