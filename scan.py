@@ -300,37 +300,32 @@ def main():
 
             day_today = stock_df.iloc[-1]
             day_yday  = stock_df.iloc[-2]
-
-            if tomorrow_label is None:
-    # NSE market holidays 2025 (add/remove as needed)
-    NSE_HOLIDAYS = {
-        datetime.date(2025, 1, 26),  # Republic Day
-        datetime.date(2025, 2, 19),  # Chhatrapati Shivaji Maharaj Jayanti
-        datetime.date(2025, 3, 14),  # Holi
-        datetime.date(2025, 3, 31),  # Id-Ul-Fitr (Ramzan Eid)
-        datetime.date(2025, 4, 10),  # Shri Ram Navami
-        datetime.date(2025, 4, 14),  # Dr. Baba Saheb Ambedkar Jayanti
-        datetime.date(2025, 4, 18),  # Good Friday
-        datetime.date(2025, 5, 1),   # Maharashtra Day
-        datetime.date(2025, 6, 7),   # Shri Guru Granth Sahib Ji birthday
-        datetime.date(2025, 6, 26),  # Eid al-Adha (Bakri Eid) — this was your issue!
-        datetime.date(2025, 8, 15),  # Independence Day
-        datetime.date(2025, 8, 27),  # Ganesh Chaturthi
-        datetime.date(2025, 10, 2),  # Gandhi Jayanti
-        datetime.date(2025, 10, 2),  # Dussehra
-        datetime.date(2025, 10, 21), # Diwali (Laxmi Pujan)
-        datetime.date(2025, 10, 22), # Diwali (Balipratipada)
-        datetime.date(2025, 11, 5),  # Prakash Gurpurb Sri Guru Nanak Dev Ji
-        datetime.date(2025, 12, 25), # Christmas
-    }
-
-    d_today = stock_df.index[-1]
-    d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
-    # Skip NSE holidays
-    while d_tomorrow.date() in NSE_HOLIDAYS:
-        d_tomorrow += pd.tseries.offsets.BDay(1)
-    tomorrow_label = d_tomorrow.strftime("%d-%m-%Y")
-    print(f"Target: {tomorrow_label}")
+if tomorrow_label is None:
+                NSE_HOLIDAYS = {
+                    datetime.date(2025, 1, 26),   # Republic Day
+                    datetime.date(2025, 2, 19),   # Chhatrapati Shivaji Maharaj Jayanti
+                    datetime.date(2025, 3, 14),   # Holi
+                    datetime.date(2025, 3, 31),   # Id-Ul-Fitr (Ramzan Eid)
+                    datetime.date(2025, 4, 10),   # Shri Ram Navami
+                    datetime.date(2025, 4, 14),   # Dr. Baba Saheb Ambedkar Jayanti
+                    datetime.date(2025, 4, 18),   # Good Friday
+                    datetime.date(2025, 5, 1),    # Maharashtra Day
+                    datetime.date(2025, 6, 7),    # Shri Guru Granth Sahib Ji birthday
+                    datetime.date(2025, 6, 26),   # Eid al-Adha (Bakri Eid)
+                    datetime.date(2025, 8, 15),   # Independence Day
+                    datetime.date(2025, 8, 27),   # Ganesh Chaturthi
+                    datetime.date(2025, 10, 2),   # Gandhi Jayanti
+                    datetime.date(2025, 10, 21),  # Diwali (Laxmi Pujan)
+                    datetime.date(2025, 10, 22),  # Diwali (Balipratipada)
+                    datetime.date(2025, 11, 5),   # Prakash Gurpurb Sri Guru Nanak Dev Ji
+                    datetime.date(2025, 12, 25),  # Christmas
+                }
+                d_today = stock_df.index[-1]
+                d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
+                while d_tomorrow.date() in NSE_HOLIDAYS:
+                    d_tomorrow += pd.tseries.offsets.BDay(1)
+                tomorrow_label = d_tomorrow.strftime("%d-%m-%Y")
+                print(f"Target: {tomorrow_label}")
 
             today_cpr    = calc_cpr(float(day_yday['High']),  float(day_yday['Low']),  float(day_yday['Close']))
             tomorrow_cpr = calc_cpr(float(day_today['High']), float(day_today['Low']), float(day_today['Close']))
