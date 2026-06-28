@@ -300,7 +300,8 @@ def main():
 
             day_today = stock_df.iloc[-1]
             day_yday  = stock_df.iloc[-2]
-if tomorrow_label is None:
+
+            if tomorrow_label is None:
                 NSE_HOLIDAYS = {
                     datetime.date(2025, 1, 26),   # Republic Day
                     datetime.date(2025, 2, 19),   # Chhatrapati Shivaji Maharaj Jayanti
