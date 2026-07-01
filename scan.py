@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Inside CPR Scanner — sends branded poster via Gmail."""
+"""Inside CPR Scanner — sends branded poster via Gmail.
+Also writes docs/cpr_list.json for momentum-stocks scanner to read.
+"""
 import os, sys, io, json, datetime, smtplib
 import yfinance as yf
 import pandas as pd
@@ -12,13 +14,11 @@ GMAIL_ADDRESS      = os.environ.get("GMAIL_ADDRESS", "").strip()
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
 REPORT_RECIPIENT   = os.environ.get("REPORT_RECIPIENT", "").strip()
 
-# Brand customisation
 BRAND_NAME    = "STARK SCHOOL OF FINANCE"
 BRAND_TAGLINE = "Happy Price Action Trading"
 BRAND_FOOTER  = "www.tradingwithgp.com"
 LOGO_FILE     = "logo (Logo).png"
 
-# Brand colors
 NAVY      = (26, 40, 71)
 GREEN     = (45, 138, 78)
 GREEN_LT  = (140, 205, 165)
@@ -35,7 +35,7 @@ DMART ULTRACEMCO TITAN ASIANPAINT WIPRO BAJAJFINSV NESTLEIND M&M COALINDIA POWER
 ADANIPORTS HAL JSWSTEEL TATASTEEL BAJAJ-AUTO TRENT IOC ADANIPOWER ADANIGREEN HINDALCO
 SIEMENS PIDILITIND VBL DLF GRASIM TECHM BEL HDFCLIFE BRITANNIA CIPLA APOLLOHOSP
 SBILIFE IRFC INDIGO EICHERMOT DRREDDY ABB DIVISLAB INDUSINDBK SHREECEM ZOMATO
-TATACONSUM BPCL HEROMOTOCO LTIM CHOLAFIN ICICIPRULI ICICIGI HAVELLS UPL JIOFIN
+TATACONSUME BPCL HEROMOTOCO LTIM CHOLAFIN ICICIPRULI ICICIGI HAVELLS UPL JIOFIN
 GAIL TATAPOWER GODREJCP DABUR PFC RECLTD AMBUJACEM ADANIENSOL VEDL TVSMOTOR
 SHRIRAMFIN BAJAJHLDNG IRCTC CGPOWER NAUKRI POLYCAB PNB BANKBARODA TIINDIA SRF
 INDUSTOWER LODHA TORNTPHARM BERGEPAINT MARICO SBICARD BOSCHLTD ATGL UNITDSPR
@@ -91,17 +91,13 @@ def send_email_photo(image_bytes, subject, body):
         msg["To"] = ", ".join(_recipients())
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html"))
-
         img_attachment = MIMEImage(image_data, name="inside_cpr.png")
         img_attachment.add_header("Content-Disposition", "attachment", filename="inside_cpr.png")
         msg.attach(img_attachment)
-
-        # Also embed inline for email clients that show images
         img_inline = MIMEImage(image_data)
         img_inline.add_header("Content-ID", "<poster>")
         img_inline.add_header("Content-Disposition", "inline", filename="inside_cpr.png")
         msg.attach(img_inline)
-
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
             server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
@@ -141,24 +137,15 @@ def make_poster(stocks, target_date):
     n = len(stocks)
     use_two_col = n > 5
     rows = (n + 1) // 2 if use_two_col else n
-
-    W = 1080
-    pad = 60
-    row_h = 88
-
-    y_logo_top = 50
-    logo_area_h = 240
-    y_title_top = y_logo_top + logo_area_h
-    title_bar_h = 200
+    W = 1080; pad = 60; row_h = 88
+    y_logo_top = 50; logo_area_h = 240
+    y_title_top = y_logo_top + logo_area_h; title_bar_h = 200
     y_table_top = y_title_top + title_bar_h + 50
     table_h = (rows + 1) * row_h
-    y_footer = y_table_top + table_h + 60
-    footer_h = 140
+    y_footer = y_table_top + table_h + 60; footer_h = 140
     H = y_footer + footer_h + 30
-
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
-
     try:
         logo = Image.open(LOGO_FILE).convert("RGBA")
         logo.thumbnail((420, logo_area_h - 20), Image.LANCZOS)
@@ -166,12 +153,10 @@ def make_poster(stocks, target_date):
     except Exception as e:
         print(f"[poster] logo load failed: {e}")
         center_text(d, BRAND_NAME, font(56), W / 2, y_logo_top + 90, NAVY)
-
     d.rectangle([0, y_title_top, W, y_title_top + title_bar_h], fill=NAVY)
     d.rectangle([0, y_title_top, 12, y_title_top + title_bar_h], fill=GREEN)
     center_text(d, "INSIDE CPR STOCKS", font(64), W / 2, y_title_top + 35, WHITE)
     center_text(d, target_date, font(52), W / 2, y_title_top + 115, GREEN_LT)
-
     if use_two_col:
         col_w = [130, (W - 2 * pad - 130) / 2, (W - 2 * pad - 130) / 2]
         x_col = [pad, pad + col_w[0], pad + col_w[0] + col_w[1]]
@@ -180,13 +165,8 @@ def make_poster(stocks, target_date):
         col_w = [180, W - 2 * pad - 180]
         x_col = [pad, pad + col_w[0]]
         headers = ["S.NO", "STOCKS"]
-
-    f_head = font(34)
-    f_cell = font(38)
-    f_no   = font(34)
-
+    f_head = font(34); f_cell = font(38); f_no = font(34)
     y = y_table_top
-
     for i, h in enumerate(headers):
         x = x_col[i]; cw = col_w[i]
         d.rectangle([x, y, x + cw, y + row_h], fill=NAVY, outline=NAVY)
@@ -194,7 +174,6 @@ def make_poster(stocks, target_date):
         tw = bbox[2] - bbox[0]; th = bbox[3] - bbox[1]
         d.text((x + (cw - tw) / 2, y + (row_h - th) / 2 - 4), h, fill=WHITE, font=f_head)
     y += row_h
-
     if use_two_col:
         left = stocks[:rows]; right = stocks[rows:]
         for i in range(rows):
@@ -220,14 +199,12 @@ def make_poster(stocks, target_date):
             d.rectangle([x_col[1], y, x_col[1] + col_w[1], y + row_h], fill=row_bg, outline=GREY_LN, width=1)
             d.text((x_col[1] + 40, y + (row_h - 42) / 2 - 2), sym, fill=DARK, font=f_cell)
             y += row_h
-
     if BRAND_TAGLINE or BRAND_FOOTER:
         d.rectangle([pad, y_footer, W - pad, y_footer + 3], fill=GREEN)
         if BRAND_TAGLINE:
             center_text(d, BRAND_TAGLINE, font(38), W / 2, y_footer + 30, NAVY)
         if BRAND_FOOTER:
             center_text(d, BRAND_FOOTER, font(28), W / 2, y_footer + 85, GREY_TXT)
-
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     buf.seek(0)
@@ -263,10 +240,37 @@ def export_watchlist_js(stocks_data, target_date):
     lines.append("];")
     lines.append("")
     lines.append("module.exports = stocks;")
-
     with open("exports/cpr-watchlist.js", "w") as f:
         f.write("\n".join(lines))
-    print(f"[export] ✅ Exported {len(stocks_data)} stocks to exports/cpr-watchlist.js")
+    print(f"[export] Exported {len(stocks_data)} stocks to exports/cpr-watchlist.js")
+
+
+def export_cpr_list_json(stocks_data, target_date):
+    """Write docs/cpr_list.json — read by momentum-stocks scanner via GitHub Pages."""
+    os.makedirs("docs", exist_ok=True)
+    ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
+    payload = {
+        "generated_at": ist.strftime("%Y-%m-%d %H:%M IST"),
+        "for_date":     target_date,
+        "total":        len(stocks_data),
+        "stocks": [
+            {
+                "sym":       s["sym"],
+                "close":     round(s["c"], 2),
+                "cpr_upper": round(s["pv"]["upper"], 2),
+                "cpr_lower": round(s["pv"]["lower"], 2),
+                "w_pct":     round((s["pv"]["width"] / s["c"]) * 100, 3),
+                "r1":        round(s["pv"]["r1"], 2),
+                "s1":        round(s["pv"]["s1"], 2),
+                "pdh":       round(s["pdh"], 2),
+                "pdl":       round(s["pdl"], 2),
+            }
+            for s in stocks_data
+        ]
+    }
+    with open("docs/cpr_list.json", "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"[export] Exported {len(stocks_data)} stocks to docs/cpr_list.json")
 
 
 def main():
@@ -303,24 +307,21 @@ def main():
 
             if tomorrow_label is None:
                 NSE_HOLIDAYS = {
-                    datetime.date(2025, 1, 26),   # Republic Day
-                    datetime.date(2025, 2, 19),   # Chhatrapati Shivaji Maharaj Jayanti
-                    datetime.date(2025, 3, 14),   # Holi
-                    datetime.date(2025, 3, 31),   # Id-Ul-Fitr (Ramzan Eid)
-                    datetime.date(2025, 4, 10),   # Shri Ram Navami
-                    datetime.date(2025, 4, 14),   # Dr. Baba Saheb Ambedkar Jayanti
-                    datetime.date(2025, 4, 18),   # Good Friday
-                    datetime.date(2025, 5, 1),    # Maharashtra Day
-                    datetime.date(2025, 6, 7),    # Shri Guru Granth Sahib Ji birthday
-                    datetime.date(2025, 6, 26),   # Eid al-Adha (Bakri Eid) - Thu
-                    datetime.date(2025, 6, 27),   # Eid al-Adha (Bakri Eid) - Fri
-                    datetime.date(2025, 8, 15),   # Independence Day
-                    datetime.date(2025, 8, 27),   # Ganesh Chaturthi
-                    datetime.date(2025, 10, 2),   # Gandhi Jayanti
-                    datetime.date(2025, 10, 21),  # Diwali (Laxmi Pujan)
-                    datetime.date(2025, 10, 22),  # Diwali (Balipratipada)
-                    datetime.date(2025, 11, 5),   # Prakash Gurpurb Sri Guru Nanak Dev Ji
-                    datetime.date(2025, 12, 25),  # Christmas
+                    datetime.date(2025, 1, 26), datetime.date(2025, 2, 19),
+                    datetime.date(2025, 3, 14), datetime.date(2025, 3, 31),
+                    datetime.date(2025, 4, 10), datetime.date(2025, 4, 14),
+                    datetime.date(2025, 4, 18), datetime.date(2025, 5, 1),
+                    datetime.date(2025, 6, 7),  datetime.date(2025, 6, 26),
+                    datetime.date(2025, 6, 27), datetime.date(2025, 8, 15),
+                    datetime.date(2025, 8, 27), datetime.date(2025, 10, 2),
+                    datetime.date(2025, 10, 21),datetime.date(2025, 10, 22),
+                    datetime.date(2025, 11, 5), datetime.date(2025, 12, 25),
+                    datetime.date(2026, 1, 26), datetime.date(2026, 3, 20),
+                    datetime.date(2026, 4, 2),  datetime.date(2026, 4, 6),
+                    datetime.date(2026, 4, 14), datetime.date(2026, 5, 1),
+                    datetime.date(2026, 8, 15), datetime.date(2026, 10, 2),
+                    datetime.date(2026, 11, 4), datetime.date(2026, 11, 5),
+                    datetime.date(2026, 12, 25),
                 }
                 d_today = stock_df.index[-1]
                 d_tomorrow = d_today + pd.tseries.offsets.BDay(1)
@@ -341,8 +342,7 @@ def main():
                 tomorrow_cpr['r1'] = r1
                 tomorrow_cpr['s1'] = s1
                 inside.append({
-                    'sym': sym,
-                    'w_pct': w_pct,
+                    'sym': sym, 'w_pct': w_pct,
                     'c': float(day_today['Close']),
                     'pv': tomorrow_cpr,
                     'pdh': float(day_today['High']),
@@ -354,6 +354,9 @@ def main():
     inside.sort(key=lambda x: x['w_pct'])
     print(f"Found {len(inside)} inside CPR stocks")
 
+    # Always write JSON (even if empty) so momentum-stocks never gets a 404
+    export_cpr_list_json(inside, tomorrow_label or "")
+
     if not inside:
         send_email_text(
             f"Inside CPR Stock List — {tomorrow_label}",
@@ -364,10 +367,8 @@ def main():
     syms = [s['sym'] for s in inside]
     print(f"Stocks: {syms}")
 
-    # Export JS watchlist for downstream tools (signal bot etc)
     export_watchlist_js(inside, tomorrow_label)
 
-    # Generate and send poster image via email
     img_buf = make_poster(syms, tomorrow_label)
     subject = f"📊 Inside CPR Stock List — {tomorrow_label}"
     body = (
