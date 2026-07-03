@@ -1,0 +1,41 @@
+name: Weekly Inside CPR Scanner
+
+on:
+  schedule:
+    - cron: '5 11 * * 5'   # 4:35 PM IST, Fridays only (runs after the daily 4PM scan)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests yfinance pandas Pillow
+
+      - name: Run weekly scanner
+        env:
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_RECIPIENT:   ${{ secrets.REPORT_RECIPIENT }}
+        run: python weekly_scan.py
+
+      - name: Commit exports and docs
+        run: |
+          git config user.name  "CPR Bot"
+          git config user.email "cpr-bot@github-actions"
+          mkdir -p docs history/weekly
+          cp docs/weekly_cpr_list.json history/weekly/$(date -u +'%Y-%m-%d').json || true
+          git add docs/ history/
+          git diff --staged --quiet || git commit -m "Weekly scan $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push || true

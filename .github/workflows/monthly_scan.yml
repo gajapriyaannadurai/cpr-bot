@@ -1,0 +1,53 @@
+name: Monthly Inside CPR Scanner
+
+on:
+  schedule:
+    # 4:40 PM IST, every day from the 25th to end of month.
+    # The script itself checks whether "today" is actually the LAST
+    # trading day of the month (skipping weekends/NSE holidays) and
+    # exits quietly on every other day, so it's safe to run daily here.
+    - cron: '10 11 25-31 * *'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force the scan to run regardless of date (for testing)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests yfinance pandas Pillow
+
+      - name: Run monthly scanner
+        env:
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_RECIPIENT:   ${{ secrets.REPORT_RECIPIENT }}
+          FORCE_RUN:          ${{ github.event.inputs.force_run == 'true' && '1' || '' }}
+        run: python monthly_scan.py
+
+      - name: Commit exports and docs
+        run: |
+          git config user.name  "CPR Bot"
+          git config user.email "cpr-bot@github-actions"
+          mkdir -p docs history/monthly
+          if [ -f docs/monthly_cpr_list.json ]; then
+            cp docs/monthly_cpr_list.json history/monthly/$(date -u +'%Y-%m-%d').json
+          fi
+          git add docs/ history/
+          git diff --staged --quiet || git commit -m "Monthly scan $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push || true
