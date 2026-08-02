@@ -90,22 +90,32 @@ def get_active_nse_symbols():
 
 
 def get_scan_universe():
-    """STOCKS minus EXCLUDED_SYMBOLS minus anything NSE no longer lists
-    as active (if that check succeeds)."""
+    """STOCKS minus EXCLUDED_SYMBOLS.
+
+    The NSE active-list fetch is LOG-ONLY, not filtering. GitHub Actions
+    runners hit NSE's servers unreliably (timeouts, partial CSVs, rate
+    limiting) — auto-excluding based on that fetch previously caused
+    valid, actively-traded symbols (SBILIFE, BERGEPAINT, MANAPPURAM, JSL,
+    TRENT) to be wrongly dropped on 03-08-2026 because the fetch came
+    back incomplete. So: we still check and print what NSE's list says,
+    for visibility, but only EXCLUDED_SYMBOLS above actually removes a
+    stock from the scan. If NSE's check repeatedly flags the same symbol
+    as inactive across several runs, that's a good, low-risk signal to
+    add it to EXCLUDED_SYMBOLS by hand.
+    """
     base = [s for s in STOCKS if s not in EXCLUDED_SYMBOLS]
     dropped_manual = [s for s in STOCKS if s in EXCLUDED_SYMBOLS]
     if dropped_manual:
         print(f"[filter] manually excluded: {dropped_manual}")
 
     active = get_active_nse_symbols()
-    if active is None:
-        return base
+    if active is not None:
+        flagged = [s for s in base if s not in active]
+        if flagged:
+            print(f"[nse-check] NOT auto-dropping, but NSE list doesn't show these as active "
+                  f"(verify before adding to EXCLUDED_SYMBOLS): {flagged}")
 
-    filtered = [s for s in base if s in active]
-    dropped_nse = [s for s in base if s not in active]
-    if dropped_nse:
-        print(f"[filter] not in NSE active list, dropping: {dropped_nse}")
-    return filtered
+    return base
 
 
 def _recipients():
@@ -164,9 +174,16 @@ def send_email_photo(image_bytes, subject, body):
 
 def calc_cpr(h, l, c):
     pp = (h + l + c) / 3
-    bc = (h + l) / 2
-    tc = 2 * pp - bc
-    return {"upper": max(tc, bc), "lower": min(tc, bc), "width": abs(tc - bc)}
+    bc_raw = (h + l) / 2
+    tc_raw = 2 * pp - bc_raw
+    # Normalize: TC is ALWAYS the higher value, BC is ALWAYS the lower one.
+    # On some sessions the raw formula can come out inverted (tc_raw < bc_raw);
+    # rather than trust the raw labels, we always resolve which is actually
+    # higher and call that TC. 'upper'/'lower' are kept as aliases so the
+    # rest of the script (which reads ['upper']/['lower']) doesn't need to change.
+    tc = max(tc_raw, bc_raw)
+    bc = min(tc_raw, bc_raw)
+    return {"tc": tc, "bc": bc, "pivot": pp, "upper": tc, "lower": bc, "width": abs(tc - bc)}
 
 
 def font(size, bold=True):
@@ -326,6 +343,31 @@ def export_cpr_list_json(stocks_data, target_date):
     print(f"[export] Exported {len(stocks_data)} stocks to docs/cpr_list.json")
 
 
+def export_debug_json(debug_rows, target_date):
+    """Write docs/cpr_debug.json — the raw H/L/C for both days and the
+    computed TC/BC for every stock that made the 'inside CPR' list, plus
+    the pass/fail margin on each side of the nesting check. Use this to
+    verify a stock against your chart in one step instead of re-deriving
+    the math by hand: if a stock looks wrong, open this file, find its
+    entry, and compare 'today_cpr'/'tomorrow_cpr' + the raw OHLC against
+    what your broker/TradingView shows for the same two dates. A mismatch
+    there means the discrepancy is in yfinance's data, not the script's math.
+    """
+    os.makedirs("docs", exist_ok=True)
+    payload = {
+        "for_date": target_date,
+        "note": "TC is always the higher of the two CPR bounds, BC the lower "
+                "(inverted-day normalization applied). margin_upper/margin_lower "
+                "are today_cpr.upper - tomorrow_cpr.upper and tomorrow_cpr.lower - "
+                "today_cpr.lower respectively; both must be >= 0 for a genuine "
+                "inside-CPR day.",
+        "stocks": debug_rows,
+    }
+    with open("docs/cpr_debug.json", "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"[export] Exported debug data for {len(debug_rows)} stocks to docs/cpr_debug.json")
+
+
 def main():
     print("Starting scan...")
     ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
@@ -347,6 +389,7 @@ def main():
 
     print("Processing...")
     inside = []
+    debug_rows = []
     tomorrow_label = None
     stale_dropped = []
 
@@ -399,8 +442,36 @@ def main():
             today_cpr    = calc_cpr(float(day_yday['High']),  float(day_yday['Low']),  float(day_yday['Close']))
             tomorrow_cpr = calc_cpr(float(day_today['High']), float(day_today['Low']), float(day_today['Close']))
 
-            if (tomorrow_cpr['upper'] <= today_cpr['upper'] and
-                tomorrow_cpr['lower'] >= today_cpr['lower']):
+            margin_upper = today_cpr['upper'] - tomorrow_cpr['upper']
+            margin_lower = tomorrow_cpr['lower'] - today_cpr['lower']
+            is_inside = margin_upper >= 0 and margin_lower >= 0
+
+            debug_entry = {
+                "sym": sym,
+                "day_yday_date": str(stock_df.index[-2].date()),
+                "day_yday_ohlc": {
+                    "H": round(float(day_yday['High']), 2),
+                    "L": round(float(day_yday['Low']), 2),
+                    "C": round(float(day_yday['Close']), 2),
+                },
+                "day_today_date": str(stock_df.index[-1].date()),
+                "day_today_ohlc": {
+                    "H": round(float(day_today['High']), 2),
+                    "L": round(float(day_today['Low']), 2),
+                    "C": round(float(day_today['Close']), 2),
+                },
+                "today_cpr":    {"tc": round(today_cpr['tc'], 2),    "bc": round(today_cpr['bc'], 2)},
+                "tomorrow_cpr": {"tc": round(tomorrow_cpr['tc'], 2), "bc": round(tomorrow_cpr['bc'], 2)},
+                "margin_upper": round(margin_upper, 4),
+                "margin_lower": round(margin_lower, 4),
+                "is_inside": is_inside,
+            }
+
+            if is_inside:
+                debug_rows.append(debug_entry)
+                print(f"[inside] {sym}: today_cpr[{today_cpr['bc']:.2f}-{today_cpr['tc']:.2f}] "
+                      f"tomorrow_cpr[{tomorrow_cpr['bc']:.2f}-{tomorrow_cpr['tc']:.2f}] "
+                      f"margins(upper={margin_upper:.3f}, lower={margin_lower:.3f})")
                 w_pct = (tomorrow_cpr['width'] / float(day_today['Close'])) * 100
                 pp = (float(day_today['High']) + float(day_today['Low']) + float(day_today['Close'])) / 3
                 r1 = 2 * pp - float(day_today['Low'])
@@ -425,6 +496,7 @@ def main():
 
     # Always write JSON (even if empty) so momentum-stocks never gets a 404
     export_cpr_list_json(inside, tomorrow_label or "")
+    export_debug_json(debug_rows, tomorrow_label or "")
 
     if not inside:
         send_email_text(
