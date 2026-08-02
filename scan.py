@@ -3,6 +3,7 @@
 Also writes docs/cpr_list.json for momentum-stocks scanner to read.
 """
 import os, sys, io, json, datetime, smtplib
+import requests
 import yfinance as yf
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
@@ -27,6 +28,19 @@ GREY_LN   = (210, 215, 225)
 GREY_TXT  = (107, 114, 128)
 DARK      = (26, 26, 26)
 WHITE     = (255, 255, 255)
+
+# Manual override — add symbols here the moment you spot something wrong
+# (delisted, merged, scheme change, suspended) and don't want to wait on
+# the automatic NSE-list check below. Cheapest, fastest fix.
+EXCLUDED_SYMBOLS = {
+    "JBCHEPHARM",  # delisted — flagged 30-07-2026
+}
+
+# Max days a symbol's most recent bar is allowed to lag "today" before we
+# treat it as inactive/delisted/suspended and drop it, regardless of what
+# the NSE active-list check below says (covers cases where that check
+# fails or hasn't caught up yet).
+MAX_STALE_DAYS = 5
 
 STOCKS = """
 RELIANCE TCS HDFCBANK BHARTIARTL ICICIBANK INFY SBIN HINDUNILVR ITC LT KOTAKBANK
@@ -53,6 +67,45 @@ JBCHEPHARM CDSL JSL HONAUT APOLLOTYRE EMAMILTD UNIONBANK
 TATAINVEST POONAWALLA CESC RBLBANK BANDHANBNK GODREJPROP NATIONALUM
 HINDCOPPER SBFC HFCL KPRMILL FIVESTAR THERMAX KAJARIACER MEDPLUS
 """.split()
+
+
+def get_active_nse_symbols():
+    """Fetch NSE's official active-equity list. Returns a set of symbols,
+    or None if the fetch fails (network block, NSE changed the URL, etc.)
+    — callers should treat None as 'skip this check, don't fail the run'.
+    """
+    url = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    try:
+        r = requests.get(url, headers=headers, timeout=15)
+        r.raise_for_status()
+        df = pd.read_csv(io.StringIO(r.text))
+        df.columns = [c.strip() for c in df.columns]
+        symbols = set(df["SYMBOL"].astype(str).str.strip())
+        print(f"[nse] fetched {len(symbols)} active symbols")
+        return symbols
+    except Exception as e:
+        print(f"[nse] could not fetch active symbol list, skipping this check: {e}")
+        return None
+
+
+def get_scan_universe():
+    """STOCKS minus EXCLUDED_SYMBOLS minus anything NSE no longer lists
+    as active (if that check succeeds)."""
+    base = [s for s in STOCKS if s not in EXCLUDED_SYMBOLS]
+    dropped_manual = [s for s in STOCKS if s in EXCLUDED_SYMBOLS]
+    if dropped_manual:
+        print(f"[filter] manually excluded: {dropped_manual}")
+
+    active = get_active_nse_symbols()
+    if active is None:
+        return base
+
+    filtered = [s for s in base if s in active]
+    dropped_nse = [s for s in base if s not in active]
+    if dropped_nse:
+        print(f"[filter] not in NSE active list, dropping: {dropped_nse}")
+    return filtered
 
 
 def _recipients():
@@ -279,7 +332,8 @@ def main():
     print(f"Time: {ist.strftime('%a %d %b %Y %I:%M %p IST')}")
     print(f"Email configured: gmail={'yes' if GMAIL_ADDRESS else 'NO'} pass={'yes' if GMAIL_APP_PASSWORD else 'NO'} to={'yes' if REPORT_RECIPIENT else 'NO'}")
 
-    tickers = [f"{s}.NS" for s in STOCKS]
+    scan_universe = get_scan_universe()
+    tickers = [f"{s}.NS" for s in scan_universe]
     print(f"Downloading {len(tickers)} tickers...")
     try:
         df = yf.download(tickers, period="10d", group_by='ticker',
@@ -294,8 +348,9 @@ def main():
     print("Processing...")
     inside = []
     tomorrow_label = None
+    stale_dropped = []
 
-    for sym in STOCKS:
+    for sym in scan_universe:
         ts = f"{sym}.NS"
         try:
             if ts not in df.columns.get_level_values(0): continue
@@ -304,6 +359,17 @@ def main():
 
             day_today = stock_df.iloc[-1]
             day_yday  = stock_df.iloc[-2]
+
+            # Staleness guard: if the most recent bar is too old, this
+            # symbol is likely delisted/suspended even though it returned
+            # data (e.g. the NSE active-list check above missed it).
+            last_bar_date = stock_df.index[-1]
+            if hasattr(last_bar_date, "to_pydatetime"):
+                last_bar_date = last_bar_date.to_pydatetime()
+            days_stale = (ist.replace(tzinfo=None) - last_bar_date.replace(tzinfo=None)).days
+            if days_stale > MAX_STALE_DAYS:
+                stale_dropped.append(sym)
+                continue
 
             if tomorrow_label is None:
                 NSE_HOLIDAYS = {
@@ -350,6 +416,9 @@ def main():
                 })
         except Exception:
             continue
+
+    if stale_dropped:
+        print(f"[filter] stale data (>{MAX_STALE_DAYS}d old), dropping: {stale_dropped}")
 
     inside.sort(key=lambda x: x['w_pct'])
     print(f"Found {len(inside)} inside CPR stocks")
