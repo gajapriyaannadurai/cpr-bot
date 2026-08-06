@@ -1,8 +1,19 @@
 {
-  "generated_at": "2026-08-06 17:48 IST",
+  "generated_at": "2026-08-06 17:53 IST",
   "for_date": "07-08-2026",
-  "total": 18,
+  "total": 19,
   "stocks": [
+    {
+      "sym": "UNITDSPR",
+      "close": 1525.0,
+      "cpr_upper": 1525.2,
+      "cpr_lower": 1525.07,
+      "w_pct": 0.009,
+      "r1": 1533.87,
+      "s1": 1516.27,
+      "pdh": 1534.0,
+      "pdl": 1516.4
+    },
     {
       "sym": "EICHERMOT",
       "close": 7967.5,

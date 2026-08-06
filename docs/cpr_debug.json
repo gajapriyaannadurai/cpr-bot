@@ -315,6 +315,32 @@
       "is_inside": true
     },
     {
+      "sym": "UNITDSPR",
+      "day_yday_date": "2026-08-05",
+      "day_yday_ohlc": {
+        "H": 1540.0,
+        "L": 1520.0,
+        "C": 1520.0
+      },
+      "day_today_date": "2026-08-06",
+      "day_today_ohlc": {
+        "H": 1534.0,
+        "L": 1516.4,
+        "C": 1525.0
+      },
+      "today_cpr": {
+        "tc": 1530.0,
+        "bc": 1523.33
+      },
+      "tomorrow_cpr": {
+        "tc": 1525.2,
+        "bc": 1525.07
+      },
+      "margin_upper": 4.8,
+      "margin_lower": 1.7333,
+      "is_inside": true
+    },
+    {
       "sym": "MUTHOOTFIN",
       "day_yday_date": "2026-08-05",
       "day_yday_ohlc": {
