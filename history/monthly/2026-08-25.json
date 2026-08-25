@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-07-31 18:35 IST",
+  "for_month": "August 2026",
+  "total": 13,
+  "stocks": [
+    {
+      "sym": "ONGC",
+      "close": 242.53,
+      "cpr_upper": 242.52,
+      "cpr_lower": 242.5,
+      "w_pct": 0.008,
+      "r1": 254.22,
+      "s1": 230.82,
+      "month_high": 254.2,
+      "month_low": 230.8
+    },
+    {
+      "sym": "POLICYBZR",
+      "close": 1601.5,
+      "cpr_upper": 1603.55,
+      "cpr_lower": 1602.18,
+      "w_pct": 0.085,
+      "r1": 1703.63,
+      "s1": 1500.73,
+      "month_high": 1705.0,
+      "month_low": 1502.1
+    },
+    {
+      "sym": "IOC",
+      "close": 140.17,
+      "cpr_upper": 140.36,
+      "cpr_lower": 140.23,
+      "w_pct": 0.088,
+      "r1": 143.99,
+      "s1": 136.48,
+      "month_high": 144.11,
+      "month_low": 136.6
+    },
+    {
+      "sym": "INDIGO",
+      "close": 5171.0,
+      "cpr_upper": 5181.25,
+      "cpr_lower": 5174.42,
+      "w_pct": 0.132,
+      "r1": 5469.67,
+      "s1": 4879.17,
+      "month_high": 5476.5,
+      "month_low": 4886.0
+    },
+    {
+      "sym": "JSWSTEEL",
+      "close": 1270.0,
+      "cpr_upper": 1265.87,
+      "cpr_lower": 1257.6,
+      "w_pct": 0.651,
+      "r1": 1312.77,
+      "s1": 1218.97,
+      "month_high": 1304.5,
+      "month_low": 1210.7
+    },
+    {
+      "sym": "ABFRL",
+      "close": 60.24,
+      "cpr_upper": 59.98,
+      "cpr_lower": 59.47,
+      "w_pct": 0.852,
+      "r1": 64.35,
+      "s1": 55.61,
+      "month_high": 63.84,
+      "month_low": 55.1
+    },
+    {
+      "sym": "UPL",
+      "close": 604.3,
+      "cpr_upper": 601.56,
+      "cpr_lower": 596.08,
+      "w_pct": 0.907,
+      "r1": 634.48,
+      "s1": 568.63,
+      "month_high": 629.0,
+      "month_low": 563.15
+    },
+    {
+      "sym": "WIPRO",
+      "close": 183.65,
+      "cpr_upper": 182.49,
+      "cpr_lower": 180.17,
+      "w_pct": 1.263,
+      "r1": 193.66,
+      "s1": 171.32,
+      "month_high": 191.34,
+      "month_low": 169.0
+    },
+    {
+      "sym": "ASTRAL",
+      "close": 1448.6,
+      "cpr_upper": 1435.07,
+      "cpr_lower": 1408.0,
+      "w_pct": 1.868,
+      "r1": 1531.47,
+      "s1": 1338.67,
+      "month_high": 1504.4,
+      "month_low": 1311.6
+    },
+    {
+      "sym": "PIIND",
+      "close": 2751.2,
+      "cpr_upper": 2719.13,
+      "cpr_lower": 2655.0,
+      "w_pct": 2.331,
+      "r1": 2847.13,
+      "s1": 2591.13,
+      "month_high": 2783.0,
+      "month_low": 2527.0
+    },
+    {
+      "sym": "TRENT",
+      "close": 3005.9,
+      "cpr_upper": 3117.85,
+      "cpr_lower": 3043.22,
+      "w_pct": 2.483,
+      "r1": 3325.07,
+      "s1": 2761.37,
+      "month_high": 3399.7,
+      "month_low": 2836.0
+    },
+    {
+      "sym": "INFY",
+      "close": 1130.1,
+      "cpr_upper": 1115.08,
+      "cpr_lower": 1085.05,
+      "w_pct": 2.658,
+      "r1": 1217.73,
+      "s1": 1012.43,
+      "month_high": 1187.7,
+      "month_low": 982.4
+    },
+    {
+      "sym": "HFCL",
+      "close": 193.92,
+      "cpr_upper": 205.28,
+      "cpr_lower": 197.7,
+      "w_pct": 3.904,
+      "r1": 221.93,
+      "s1": 173.48,
+      "month_high": 229.5,
+      "month_low": 181.05
+    }
+  ]
+}
