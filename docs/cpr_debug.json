@@ -1,161 +1,525 @@
 {
-  "for_date": "27-08-2026",
+  "for_date": "28-08-2026",
   "note": "TC is always the higher of the two CPR bounds, BC the lower (inverted-day normalization applied). margin_upper/margin_lower are today_cpr.upper - tomorrow_cpr.upper and tomorrow_cpr.lower - today_cpr.lower respectively; both must be >= 0 for a genuine inside-CPR day.",
   "stocks": [
     {
-      "sym": "APOLLOHOSP",
-      "day_yday_date": "2026-08-25",
+      "sym": "SUNPHARMA",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 8889.0,
-        "L": 8640.0,
-        "C": 8889.0
+        "H": 1926.9,
+        "L": 1899.5,
+        "C": 1899.5
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
+        "H": 1925.0,
+        "L": 1898.0,
+        "C": 1913.3
+      },
+      "today_cpr": {
+        "tc": 1913.2,
+        "bc": 1904.07
+      },
+      "tomorrow_cpr": {
+        "tc": 1912.7,
+        "bc": 1911.5
+      },
+      "margin_upper": 0.5,
+      "margin_lower": 7.4333,
+      "is_inside": true
+    },
+    {
+      "sym": "ADANIGREEN",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1346.8,
+        "L": 1303.2,
+        "C": 1303.2
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1328.5,
+        "L": 1302.1,
+        "C": 1328.5
+      },
+      "today_cpr": {
+        "tc": 1325.0,
+        "bc": 1310.47
+      },
+      "tomorrow_cpr": {
+        "tc": 1324.1,
+        "bc": 1315.3
+      },
+      "margin_upper": 0.9,
+      "margin_lower": 4.8334,
+      "is_inside": true
+    },
+    {
+      "sym": "DLF",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 690.4,
+        "L": 672.5,
+        "C": 672.5
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 687.5,
+        "L": 673.55,
+        "C": 676.15
+      },
+      "today_cpr": {
+        "tc": 681.45,
+        "bc": 675.48
+      },
+      "tomorrow_cpr": {
+        "tc": 680.52,
+        "bc": 677.61
+      },
+      "margin_upper": 0.925,
+      "margin_lower": 2.125,
+      "is_inside": true
+    },
+    {
+      "sym": "TECHM",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1614.9,
+        "L": 1565.8,
+        "C": 1571.0
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1600.0,
+        "L": 1571.6,
+        "C": 1585.0
+      },
+      "today_cpr": {
+        "tc": 1590.35,
+        "bc": 1577.45
+      },
+      "tomorrow_cpr": {
+        "tc": 1585.8,
+        "bc": 1585.27
+      },
+      "margin_upper": 4.55,
+      "margin_lower": 7.8167,
+      "is_inside": true
+    },
+    {
+      "sym": "APOLLOHOSP",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
         "H": 8868.0,
         "L": 8763.5,
         "C": 8766.5
       },
-      "today_cpr": {
-        "tc": 8847.5,
-        "bc": 8764.5
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 8868.0,
+        "L": 8758.5,
+        "C": 8800.0
       },
-      "tomorrow_cpr": {
+      "today_cpr": {
         "tc": 8815.75,
         "bc": 8782.92
       },
-      "margin_upper": 31.75,
-      "margin_lower": 18.4167,
+      "tomorrow_cpr": {
+        "tc": 8813.25,
+        "bc": 8804.42
+      },
+      "margin_upper": 2.5,
+      "margin_lower": 21.5,
       "is_inside": true
     },
     {
-      "sym": "POLYCAB",
-      "day_yday_date": "2026-08-25",
+      "sym": "BAJAJHLDNG",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 9119.5,
-        "L": 8990.5,
-        "C": 9098.0
+        "H": 11540.0,
+        "L": 11223.0,
+        "C": 11540.0
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
-        "H": 9159.0,
-        "L": 8984.0,
-        "C": 9060.0
+        "H": 11520.0,
+        "L": 11331.0,
+        "C": 11399.0
       },
       "today_cpr": {
-        "tc": 9083.67,
-        "bc": 9055.0
+        "tc": 11487.17,
+        "bc": 11381.5
       },
       "tomorrow_cpr": {
-        "tc": 9071.5,
-        "bc": 9063.83
+        "tc": 11425.5,
+        "bc": 11407.83
       },
-      "margin_upper": 12.1667,
-      "margin_lower": 8.8333,
+      "margin_upper": 61.6667,
+      "margin_lower": 26.3333,
       "is_inside": true
     },
     {
-      "sym": "TORNTPHARM",
-      "day_yday_date": "2026-08-25",
+      "sym": "IRCTC",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 4932.0,
-        "L": 4855.5,
-        "C": 4932.0
+        "H": 492.5,
+        "L": 483.5,
+        "C": 491.75
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
-        "H": 4930.5,
-        "L": 4881.0,
-        "C": 4890.0
+        "H": 492.5,
+        "L": 486.0,
+        "C": 487.55
       },
       "today_cpr": {
-        "tc": 4919.25,
-        "bc": 4893.75
+        "tc": 490.5,
+        "bc": 488.0
       },
       "tomorrow_cpr": {
-        "tc": 4905.75,
-        "bc": 4895.25
+        "tc": 489.25,
+        "bc": 488.12
       },
-      "margin_upper": 13.5,
-      "margin_lower": 1.5,
+      "margin_upper": 1.25,
+      "margin_lower": 0.1167,
       "is_inside": true
     },
     {
-      "sym": "ESCORTS",
-      "day_yday_date": "2026-08-25",
+      "sym": "NAUKRI",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 3103.9,
-        "L": 3050.0,
-        "C": 3064.8
+        "H": 1350.9,
+        "L": 1322.0,
+        "C": 1323.5
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
-        "H": 3094.4,
-        "L": 3056.0,
-        "C": 3067.0
+        "H": 1345.6,
+        "L": 1318.0,
+        "C": 1330.0
       },
       "today_cpr": {
-        "tc": 3076.95,
-        "bc": 3068.85
+        "tc": 1336.45,
+        "bc": 1327.82
       },
       "tomorrow_cpr": {
-        "tc": 3075.2,
-        "bc": 3069.73
+        "tc": 1331.8,
+        "bc": 1330.6
       },
-      "margin_upper": 1.75,
-      "margin_lower": 0.8833,
+      "margin_upper": 4.65,
+      "margin_lower": 2.7833,
       "is_inside": true
     },
     {
-      "sym": "DIXON",
-      "day_yday_date": "2026-08-25",
+      "sym": "PETRONET",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 14990.0,
-        "L": 14400.0,
-        "C": 14990.0
+        "H": 295.95,
+        "L": 289.0,
+        "C": 289.0
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
-        "H": 14983.0,
-        "L": 14720.0,
-        "C": 14735.0
+        "H": 293.35,
+        "L": 289.6,
+        "C": 290.95
       },
       "today_cpr": {
-        "tc": 14891.67,
-        "bc": 14695.0
+        "tc": 292.48,
+        "bc": 290.16
       },
       "tomorrow_cpr": {
-        "tc": 14851.5,
-        "bc": 14773.83
+        "tc": 291.48,
+        "bc": 291.13
       },
-      "margin_upper": 40.1667,
-      "margin_lower": 78.8333,
+      "margin_upper": 1.0,
+      "margin_lower": 0.9667,
       "is_inside": true
     },
     {
-      "sym": "APOLLOTYRE",
-      "day_yday_date": "2026-08-25",
+      "sym": "ALKEM",
+      "day_yday_date": "2026-08-26",
       "day_yday_ohlc": {
-        "H": 447.15,
-        "L": 440.0,
-        "C": 441.4
+        "H": 5387.5,
+        "L": 5303.5,
+        "C": 5303.5
       },
-      "day_today_date": "2026-08-26",
+      "day_today_date": "2026-08-27",
       "day_today_ohlc": {
-        "H": 445.75,
-        "L": 439.2,
-        "C": 443.05
+        "H": 5358.5,
+        "L": 5297.5,
+        "C": 5320.0
       },
       "today_cpr": {
-        "tc": 443.57,
-        "bc": 442.12
+        "tc": 5345.5,
+        "bc": 5317.5
       },
       "tomorrow_cpr": {
-        "tc": 442.86,
-        "bc": 442.48
+        "tc": 5328.0,
+        "bc": 5322.67
       },
-      "margin_upper": 0.7167,
-      "margin_lower": 0.35,
+      "margin_upper": 17.5,
+      "margin_lower": 5.1667,
+      "is_inside": true
+    },
+    {
+      "sym": "SAIL",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 196.5,
+        "L": 182.4,
+        "C": 194.9
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 195.9,
+        "L": 187.5,
+        "C": 193.0
+      },
+      "today_cpr": {
+        "tc": 193.08,
+        "bc": 189.45
+      },
+      "tomorrow_cpr": {
+        "tc": 192.57,
+        "bc": 191.7
+      },
+      "margin_upper": 0.5167,
+      "margin_lower": 2.25,
+      "is_inside": true
+    },
+    {
+      "sym": "COFORGE",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1937.1,
+        "L": 1878.6,
+        "C": 1880.0
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1909.1,
+        "L": 1881.0,
+        "C": 1901.8
+      },
+      "today_cpr": {
+        "tc": 1907.85,
+        "bc": 1889.28
+      },
+      "tomorrow_cpr": {
+        "tc": 1899.55,
+        "bc": 1895.05
+      },
+      "margin_upper": 8.2999,
+      "margin_lower": 5.7667,
+      "is_inside": true
+    },
+    {
+      "sym": "ASTRAL",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1544.6,
+        "L": 1525.9,
+        "C": 1526.1
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1547.5,
+        "L": 1521.3,
+        "C": 1529.2
+      },
+      "today_cpr": {
+        "tc": 1535.25,
+        "bc": 1529.15
+      },
+      "tomorrow_cpr": {
+        "tc": 1534.4,
+        "bc": 1530.93
+      },
+      "margin_upper": 0.85,
+      "margin_lower": 1.7833,
+      "is_inside": true
+    },
+    {
+      "sym": "PRESTIGE",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1647.3,
+        "L": 1614.0,
+        "C": 1615.1
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1635.9,
+        "L": 1609.6,
+        "C": 1623.0
+      },
+      "today_cpr": {
+        "tc": 1630.65,
+        "bc": 1620.28
+      },
+      "tomorrow_cpr": {
+        "tc": 1622.92,
+        "bc": 1622.75
+      },
+      "margin_upper": 7.7334,
+      "margin_lower": 2.4667,
+      "is_inside": true
+    },
+    {
+      "sym": "NYKAA",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 340.0,
+        "L": 333.05,
+        "C": 340.0
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 340.35,
+        "L": 336.4,
+        "C": 338.0
+      },
+      "today_cpr": {
+        "tc": 338.84,
+        "bc": 336.52
+      },
+      "tomorrow_cpr": {
+        "tc": 338.38,
+        "bc": 338.12
+      },
+      "margin_upper": 0.4667,
+      "margin_lower": 1.6,
+      "is_inside": true
+    },
+    {
+      "sym": "IPCALAB",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 1992.0,
+        "L": 1935.1,
+        "C": 1952.4
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 1970.3,
+        "L": 1947.3,
+        "C": 1959.8
+      },
+      "today_cpr": {
+        "tc": 1963.55,
+        "bc": 1956.12
+      },
+      "tomorrow_cpr": {
+        "tc": 1959.47,
+        "bc": 1958.8
+      },
+      "margin_upper": 4.0833,
+      "margin_lower": 2.6834,
+      "is_inside": true
+    },
+    {
+      "sym": "MAHABANK",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 87.0,
+        "L": 82.0,
+        "C": 85.6
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 86.19,
+        "L": 84.05,
+        "C": 84.69
+      },
+      "today_cpr": {
+        "tc": 85.23,
+        "bc": 84.5
+      },
+      "tomorrow_cpr": {
+        "tc": 85.12,
+        "bc": 84.83
+      },
+      "margin_upper": 0.1133,
+      "margin_lower": 0.3333,
+      "is_inside": true
+    },
+    {
+      "sym": "BSE",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 3392.1,
+        "L": 3309.0,
+        "C": 3325.6
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 3386.6,
+        "L": 3312.1,
+        "C": 3328.0
+      },
+      "today_cpr": {
+        "tc": 3350.55,
+        "bc": 3333.92
+      },
+      "tomorrow_cpr": {
+        "tc": 3349.35,
+        "bc": 3335.12
+      },
+      "margin_upper": 1.2,
+      "margin_lower": 1.2,
+      "is_inside": true
+    },
+    {
+      "sym": "GLAND",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 2915.0,
+        "L": 2831.4,
+        "C": 2903.2
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 2924.4,
+        "L": 2855.6,
+        "C": 2873.5
+      },
+      "today_cpr": {
+        "tc": 2893.2,
+        "bc": 2873.2
+      },
+      "tomorrow_cpr": {
+        "tc": 2890.0,
+        "bc": 2879.0
+      },
+      "margin_upper": 3.2,
+      "margin_lower": 5.8,
+      "is_inside": true
+    },
+    {
+      "sym": "MEDPLUS",
+      "day_yday_date": "2026-08-26",
+      "day_yday_ohlc": {
+        "H": 694.0,
+        "L": 678.15,
+        "C": 692.1
+      },
+      "day_today_date": "2026-08-27",
+      "day_today_ohlc": {
+        "H": 695.0,
+        "L": 681.6,
+        "C": 688.35
+      },
+      "today_cpr": {
+        "tc": 690.09,
+        "bc": 686.08
+      },
+      "tomorrow_cpr": {
+        "tc": 688.33,
+        "bc": 688.3
+      },
+      "margin_upper": 1.7583,
+      "margin_lower": 2.225,
       "is_inside": true
     }
   ]
