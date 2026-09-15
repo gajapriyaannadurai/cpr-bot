@@ -1,109 +1,57 @@
 {
-  "for_date": "14-09-2026",
+  "for_date": "16-09-2026",
   "note": "TC is always the higher of the two CPR bounds, BC the lower (inverted-day normalization applied). margin_upper/margin_lower are today_cpr.upper - tomorrow_cpr.upper and tomorrow_cpr.lower - today_cpr.lower respectively; both must be >= 0 for a genuine inside-CPR day.",
   "stocks": [
     {
-      "sym": "TORNTPHARM",
-      "day_yday_date": "2026-09-10",
+      "sym": "ONGC",
+      "day_yday_date": "2026-09-11",
       "day_yday_ohlc": {
-        "H": 5000.0,
-        "L": 4921.0,
-        "C": 4930.0
+        "H": 243.16,
+        "L": 232.5,
+        "C": 232.5
       },
-      "day_today_date": "2026-09-11",
+      "day_today_date": "2026-09-15",
       "day_today_ohlc": {
-        "H": 4988.0,
-        "L": 4894.0,
-        "C": 4965.5
+        "H": 236.3,
+        "L": 233.33,
+        "C": 235.95
       },
       "today_cpr": {
-        "tc": 4960.5,
-        "bc": 4940.17
+        "tc": 237.83,
+        "bc": 234.28
       },
       "tomorrow_cpr": {
-        "tc": 4957.33,
-        "bc": 4941.0
+        "tc": 235.57,
+        "bc": 234.82
       },
-      "margin_upper": 3.1667,
-      "margin_lower": 0.8333,
+      "margin_upper": 2.2583,
+      "margin_lower": 0.5383,
       "is_inside": true
     },
     {
-      "sym": "MFSL",
-      "day_yday_date": "2026-09-10",
+      "sym": "JINDALSTEL",
+      "day_yday_date": "2026-09-11",
       "day_yday_ohlc": {
-        "H": 1483.7,
-        "L": 1452.0,
-        "C": 1479.9
+        "H": 1122.0,
+        "L": 1058.0,
+        "C": 1120.5
       },
-      "day_today_date": "2026-09-11",
+      "day_today_date": "2026-09-15",
       "day_today_ohlc": {
-        "H": 1488.0,
-        "L": 1453.6,
-        "C": 1477.0
+        "H": 1119.7,
+        "L": 1090.5,
+        "C": 1095.0
       },
       "today_cpr": {
-        "tc": 1475.88,
-        "bc": 1467.85
+        "tc": 1110.33,
+        "bc": 1090.0
       },
       "tomorrow_cpr": {
-        "tc": 1474.93,
-        "bc": 1470.8
+        "tc": 1105.1,
+        "bc": 1098.37
       },
-      "margin_upper": 0.95,
-      "margin_lower": 2.95,
-      "is_inside": true
-    },
-    {
-      "sym": "ZYDUSLIFE",
-      "day_yday_date": "2026-09-10",
-      "day_yday_ohlc": {
-        "H": 1136.3,
-        "L": 1108.1,
-        "C": 1117.8
-      },
-      "day_today_date": "2026-09-11",
-      "day_today_ohlc": {
-        "H": 1135.5,
-        "L": 1104.6,
-        "C": 1119.1
-      },
-      "today_cpr": {
-        "tc": 1122.2,
-        "bc": 1119.27
-      },
-      "tomorrow_cpr": {
-        "tc": 1120.05,
-        "bc": 1119.42
-      },
-      "margin_upper": 2.15,
-      "margin_lower": 0.1499,
-      "is_inside": true
-    },
-    {
-      "sym": "CUB",
-      "day_yday_date": "2026-09-10",
-      "day_yday_ohlc": {
-        "H": 232.99,
-        "L": 224.95,
-        "C": 226.45
-      },
-      "day_today_date": "2026-09-11",
-      "day_today_ohlc": {
-        "H": 231.85,
-        "L": 223.69,
-        "C": 227.32
-      },
-      "today_cpr": {
-        "tc": 228.97,
-        "bc": 227.29
-      },
-      "tomorrow_cpr": {
-        "tc": 227.77,
-        "bc": 227.47
-      },
-      "margin_upper": 1.2,
-      "margin_lower": 0.18,
+      "margin_upper": 5.2334,
+      "margin_lower": 8.3667,
       "is_inside": true
     }
   ]
