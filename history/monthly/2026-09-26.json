@@ -1,0 +1,139 @@
+{
+  "generated_at": "2026-08-31 23:29 IST",
+  "for_month": "September 2026",
+  "total": 12,
+  "stocks": [
+    {
+      "sym": "MAHABANK",
+      "close": 82.07,
+      "cpr_upper": 82.1,
+      "cpr_lower": 82.08,
+      "w_pct": 0.024,
+      "r1": 86.98,
+      "s1": 77.18,
+      "month_high": 87.0,
+      "month_low": 77.2
+    },
+    {
+      "sym": "OBEROIRLTY",
+      "close": 1868.0,
+      "cpr_upper": 1866.12,
+      "cpr_lower": 1862.35,
+      "w_pct": 0.202,
+      "r1": 1964.47,
+      "s1": 1767.77,
+      "month_high": 1960.7,
+      "month_low": 1764.0
+    },
+    {
+      "sym": "CAMS",
+      "close": 782.0,
+      "cpr_upper": 784.75,
+      "cpr_lower": 782.92,
+      "w_pct": 0.234,
+      "r1": 828.67,
+      "s1": 737.17,
+      "month_high": 830.5,
+      "month_low": 739.0
+    },
+    {
+      "sym": "SBICARD",
+      "close": 644.75,
+      "cpr_upper": 643.87,
+      "cpr_lower": 642.1,
+      "w_pct": 0.274,
+      "r1": 675.97,
+      "s1": 611.77,
+      "month_high": 674.2,
+      "month_low": 610.0
+    },
+    {
+      "sym": "NESTLEIND",
+      "close": 1496.5,
+      "cpr_upper": 1494.43,
+      "cpr_lower": 1490.3,
+      "w_pct": 0.276,
+      "r1": 1557.13,
+      "s1": 1431.73,
+      "month_high": 1553.0,
+      "month_low": 1427.6
+    },
+    {
+      "sym": "GAIL",
+      "close": 177.5,
+      "cpr_upper": 177.07,
+      "cpr_lower": 176.2,
+      "w_pct": 0.488,
+      "r1": 183.25,
+      "s1": 170.89,
+      "month_high": 182.38,
+      "month_low": 170.02
+    },
+    {
+      "sym": "GODREJPROP",
+      "close": 2014.7,
+      "cpr_upper": 2053.25,
+      "cpr_lower": 2027.55,
+      "w_pct": 1.276,
+      "r1": 2118.2,
+      "s1": 1936.9,
+      "month_high": 2143.9,
+      "month_low": 1962.6
+    },
+    {
+      "sym": "MFSL",
+      "close": 1573.1,
+      "cpr_upper": 1560.8,
+      "cpr_lower": 1536.2,
+      "w_pct": 1.564,
+      "r1": 1629.5,
+      "s1": 1492.1,
+      "month_high": 1604.9,
+      "month_low": 1467.5
+    },
+    {
+      "sym": "AXISBANK",
+      "close": 1300.0,
+      "cpr_upper": 1284.77,
+      "cpr_lower": 1254.3,
+      "w_pct": 2.344,
+      "r1": 1330.47,
+      "s1": 1239.07,
+      "month_high": 1300.0,
+      "month_low": 1208.6
+    },
+    {
+      "sym": "JIOFIN",
+      "close": 241.35,
+      "cpr_upper": 251.85,
+      "cpr_lower": 244.85,
+      "w_pct": 2.9,
+      "r1": 261.2,
+      "s1": 228.5,
+      "month_high": 268.2,
+      "month_low": 235.5
+    },
+    {
+      "sym": "BAJFINANCE",
+      "close": 1057.0,
+      "cpr_upper": 1114.2,
+      "cpr_lower": 1076.07,
+      "w_pct": 3.608,
+      "r1": 1138.27,
+      "s1": 1013.87,
+      "month_high": 1176.4,
+      "month_low": 1052.0
+    },
+    {
+      "sym": "CUB",
+      "close": 229.19,
+      "cpr_upper": 224.7,
+      "cpr_lower": 215.72,
+      "w_pct": 3.918,
+      "r1": 239.68,
+      "s1": 209.72,
+      "month_high": 230.7,
+      "month_low": 200.74
+    }
+  ]
+}
