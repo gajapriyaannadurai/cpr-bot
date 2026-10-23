@@ -1,0 +1,117 @@
+{
+  "generated_at": "2026-10-23 21:09 IST",
+  "for_week": "26-Oct to 30-Oct-2026",
+  "total": 10,
+  "stocks": [
+    {
+      "sym": "IOC",
+      "close": 129.09,
+      "cpr_upper": 129.08,
+      "cpr_lower": 129.05,
+      "w_pct": 0.021,
+      "r1": 131.63,
+      "s1": 126.53,
+      "week_high": 131.6,
+      "week_low": 126.5
+    },
+    {
+      "sym": "LT",
+      "close": 3647.0,
+      "cpr_upper": 3648.8,
+      "cpr_lower": 3647.6,
+      "w_pct": 0.033,
+      "r1": 3701.4,
+      "s1": 3593.8,
+      "week_high": 3702.6,
+      "week_low": 3595.0
+    },
+    {
+      "sym": "TATAPOWER",
+      "close": 348.1,
+      "cpr_upper": 348.01,
+      "cpr_lower": 347.82,
+      "w_pct": 0.053,
+      "r1": 355.53,
+      "s1": 340.48,
+      "week_high": 355.35,
+      "week_low": 340.3
+    },
+    {
+      "sym": "GRASIM",
+      "close": 2894.0,
+      "cpr_upper": 2893.17,
+      "cpr_lower": 2891.5,
+      "w_pct": 0.058,
+      "r1": 2956.47,
+      "s1": 2829.87,
+      "week_high": 2954.8,
+      "week_low": 2828.2
+    },
+    {
+      "sym": "M&M",
+      "close": 2861.2,
+      "cpr_upper": 2870.5,
+      "cpr_lower": 2864.3,
+      "w_pct": 0.217,
+      "r1": 2932.4,
+      "s1": 2796.2,
+      "week_high": 2938.6,
+      "week_low": 2802.4
+    },
+    {
+      "sym": "HINDPETRO",
+      "close": 338.3,
+      "cpr_upper": 340.12,
+      "cpr_lower": 338.91,
+      "w_pct": 0.36,
+      "r1": 350.23,
+      "s1": 327.58,
+      "week_high": 351.45,
+      "week_low": 328.8
+    },
+    {
+      "sym": "RELIANCE",
+      "close": 1190.0,
+      "cpr_upper": 1198.7,
+      "cpr_lower": 1192.9,
+      "w_pct": 0.487,
+      "r1": 1228.5,
+      "s1": 1157.3,
+      "week_high": 1234.3,
+      "week_low": 1163.1
+    },
+    {
+      "sym": "TVSMOTOR",
+      "close": 3980.2,
+      "cpr_upper": 4018.05,
+      "cpr_lower": 3992.82,
+      "w_pct": 0.634,
+      "r1": 4112.77,
+      "s1": 3872.87,
+      "week_high": 4138.0,
+      "week_low": 3898.1
+    },
+    {
+      "sym": "ACC",
+      "close": 1159.4,
+      "cpr_upper": 1171.7,
+      "cpr_lower": 1163.5,
+      "w_pct": 0.707,
+      "r1": 1200.6,
+      "s1": 1126.4,
+      "week_high": 1208.8,
+      "week_low": 1134.6
+    },
+    {
+      "sym": "HEROMOTOCO",
+      "close": 5047.0,
+      "cpr_upper": 5158.75,
+      "cpr_lower": 5084.25,
+      "w_pct": 1.476,
+      "r1": 5248.5,
+      "s1": 4920.0,
+      "week_high": 5323.0,
+      "week_low": 4994.5
+    }
+  ]
+}
