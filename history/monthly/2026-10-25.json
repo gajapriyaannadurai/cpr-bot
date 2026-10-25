@@ -1,0 +1,172 @@
+{
+  "generated_at": "2026-09-30 22:18 IST",
+  "for_month": "October 2026",
+  "total": 15,
+  "stocks": [
+    {
+      "sym": "HFCL",
+      "close": 227.02,
+      "cpr_upper": 227.08,
+      "cpr_lower": 227.04,
+      "w_pct": 0.018,
+      "r1": 255.12,
+      "s1": 198.96,
+      "month_high": 255.16,
+      "month_low": 199.0
+    },
+    {
+      "sym": "ADANIGREEN",
+      "close": 1278.0,
+      "cpr_upper": 1278.35,
+      "cpr_lower": 1278.12,
+      "w_pct": 0.018,
+      "r1": 1339.47,
+      "s1": 1216.77,
+      "month_high": 1339.7,
+      "month_low": 1217.0
+    },
+    {
+      "sym": "MOTHERSON",
+      "close": 163.26,
+      "cpr_upper": 163.24,
+      "cpr_lower": 163.2,
+      "w_pct": 0.024,
+      "r1": 170.04,
+      "s1": 156.44,
+      "month_high": 170.0,
+      "month_low": 156.4
+    },
+    {
+      "sym": "ADANIPOWER",
+      "close": 204.0,
+      "cpr_upper": 204.28,
+      "cpr_lower": 204.09,
+      "w_pct": 0.09,
+      "r1": 215.92,
+      "s1": 192.27,
+      "month_high": 216.1,
+      "month_low": 192.45
+    },
+    {
+      "sym": "INDHOTEL",
+      "close": 728.65,
+      "cpr_upper": 729.8,
+      "cpr_lower": 729.03,
+      "w_pct": 0.105,
+      "r1": 754.23,
+      "s1": 703.83,
+      "month_high": 755.0,
+      "month_low": 704.6
+    },
+    {
+      "sym": "AUROPHARMA",
+      "close": 1672.0,
+      "cpr_upper": 1681.3,
+      "cpr_lower": 1675.1,
+      "w_pct": 0.371,
+      "r1": 1733.8,
+      "s1": 1616.4,
+      "month_high": 1740.0,
+      "month_low": 1622.6
+    },
+    {
+      "sym": "ITC",
+      "close": 262.75,
+      "cpr_upper": 264.38,
+      "cpr_lower": 263.29,
+      "w_pct": 0.412,
+      "r1": 269.97,
+      "s1": 256.62,
+      "month_high": 271.05,
+      "month_low": 257.7
+    },
+    {
+      "sym": "TATAPOWER",
+      "close": 359.0,
+      "cpr_upper": 362.4,
+      "cpr_lower": 360.13,
+      "w_pct": 0.631,
+      "r1": 375.38,
+      "s1": 344.88,
+      "month_high": 377.65,
+      "month_low": 347.15
+    },
+    {
+      "sym": "BOSCHLTD",
+      "close": 47100.0,
+      "cpr_upper": 47550.0,
+      "cpr_lower": 47250.0,
+      "w_pct": 0.637,
+      "r1": 49100.0,
+      "s1": 45400.0,
+      "month_high": 49400.0,
+      "month_low": 45700.0
+    },
+    {
+      "sym": "KAJARIACER",
+      "close": 1235.1,
+      "cpr_upper": 1230.32,
+      "cpr_lower": 1220.75,
+      "w_pct": 0.775,
+      "r1": 1284.07,
+      "s1": 1176.57,
+      "month_high": 1274.5,
+      "month_low": 1167.0
+    },
+    {
+      "sym": "TORNTPOWER",
+      "close": 1245.9,
+      "cpr_upper": 1263.2,
+      "cpr_lower": 1251.67,
+      "w_pct": 0.926,
+      "r1": 1315.87,
+      "s1": 1187.47,
+      "month_high": 1327.4,
+      "month_low": 1199.0
+    },
+    {
+      "sym": "EMAMILTD",
+      "close": 379.05,
+      "cpr_upper": 384.4,
+      "cpr_lower": 380.83,
+      "w_pct": 0.941,
+      "r1": 404.08,
+      "s1": 357.58,
+      "month_high": 407.65,
+      "month_low": 361.15
+    },
+    {
+      "sym": "ADANIENT",
+      "close": 2903.4,
+      "cpr_upper": 2967.85,
+      "cpr_lower": 2924.88,
+      "w_pct": 1.48,
+      "r1": 3099.03,
+      "s1": 2750.73,
+      "month_high": 3142.0,
+      "month_low": 2793.7
+    },
+    {
+      "sym": "SAIL",
+      "close": 181.49,
+      "cpr_upper": 185.65,
+      "cpr_lower": 182.88,
+      "w_pct": 1.528,
+      "r1": 198.03,
+      "s1": 167.73,
+      "month_high": 200.8,
+      "month_low": 170.5
+    },
+    {
+      "sym": "GLENMARK",
+      "close": 2334.7,
+      "cpr_upper": 2393.45,
+      "cpr_lower": 2354.28,
+      "w_pct": 1.678,
+      "r1": 2455.73,
+      "s1": 2252.83,
+      "month_high": 2494.9,
+      "month_low": 2292.0
+    }
+  ]
+}
