@@ -1,0 +1,293 @@
+{
+  "generated_at": "2026-10-30 22:26 IST",
+  "for_week": "02-Nov to 06-Nov-2026",
+  "total": 26,
+  "stocks": [
+    {
+      "sym": "ENDURANCE",
+      "close": 2273.4,
+      "cpr_upper": 2273.5,
+      "cpr_lower": 2273.43,
+      "w_pct": 0.003,
+      "r1": 2344.93,
+      "s1": 2201.93,
+      "week_high": 2345.0,
+      "week_low": 2202.0
+    },
+    {
+      "sym": "MPHASIS",
+      "close": 2525.6,
+      "cpr_upper": 2526.7,
+      "cpr_lower": 2525.97,
+      "w_pct": 0.029,
+      "r1": 2617.67,
+      "s1": 2434.27,
+      "week_high": 2618.4,
+      "week_low": 2435.0
+    },
+    {
+      "sym": "NMDC",
+      "close": 67.34,
+      "cpr_upper": 67.33,
+      "cpr_lower": 67.31,
+      "w_pct": 0.035,
+      "r1": 69.02,
+      "s1": 65.63,
+      "week_high": 69.0,
+      "week_low": 65.61
+    },
+    {
+      "sym": "TIINDIA",
+      "close": 2120.0,
+      "cpr_upper": 2118.83,
+      "cpr_lower": 2116.5,
+      "w_pct": 0.11,
+      "r1": 2180.33,
+      "s1": 2057.33,
+      "week_high": 2178.0,
+      "week_low": 2055.0
+    },
+    {
+      "sym": "CANBK",
+      "close": 117.54,
+      "cpr_upper": 117.45,
+      "cpr_lower": 117.26,
+      "w_pct": 0.156,
+      "r1": 120.08,
+      "s1": 114.81,
+      "week_high": 119.9,
+      "week_low": 114.63
+    },
+    {
+      "sym": "BANDHANBNK",
+      "close": 154.33,
+      "cpr_upper": 154.17,
+      "cpr_lower": 153.83,
+      "w_pct": 0.214,
+      "r1": 164.31,
+      "s1": 144.02,
+      "week_high": 163.98,
+      "week_low": 143.69
+    },
+    {
+      "sym": "SUNTV",
+      "close": 607.55,
+      "cpr_upper": 609.67,
+      "cpr_lower": 608.26,
+      "w_pct": 0.233,
+      "r1": 652.58,
+      "s1": 563.93,
+      "week_high": 654.0,
+      "week_low": 565.35
+    },
+    {
+      "sym": "PAYTM",
+      "close": 1634.3,
+      "cpr_upper": 1641.2,
+      "cpr_lower": 1636.6,
+      "w_pct": 0.281,
+      "r1": 1695.4,
+      "s1": 1577.8,
+      "week_high": 1700.0,
+      "week_low": 1582.4
+    },
+    {
+      "sym": "ONGC",
+      "close": 225.39,
+      "cpr_upper": 226.45,
+      "cpr_lower": 225.74,
+      "w_pct": 0.314,
+      "r1": 229.14,
+      "s1": 222.34,
+      "week_high": 229.85,
+      "week_low": 223.05
+    },
+    {
+      "sym": "MUTHOOTFIN",
+      "close": 2408.6,
+      "cpr_upper": 2420.5,
+      "cpr_lower": 2412.57,
+      "w_pct": 0.329,
+      "r1": 2498.07,
+      "s1": 2327.07,
+      "week_high": 2506.0,
+      "week_low": 2335.0
+    },
+    {
+      "sym": "OFSS",
+      "close": 9995.0,
+      "cpr_upper": 9976.17,
+      "cpr_lower": 9938.5,
+      "w_pct": 0.377,
+      "r1": 10374.67,
+      "s1": 9577.67,
+      "week_high": 10337.0,
+      "week_low": 9540.0
+    },
+    {
+      "sym": "TATAINVEST",
+      "close": 562.8,
+      "cpr_upper": 561.66,
+      "cpr_lower": 559.38,
+      "w_pct": 0.406,
+      "r1": 577.73,
+      "s1": 545.58,
+      "week_high": 575.45,
+      "week_low": 543.3
+    },
+    {
+      "sym": "BRITANNIA",
+      "close": 4640.0,
+      "cpr_upper": 4625.82,
+      "cpr_lower": 4597.45,
+      "w_pct": 0.611,
+      "r1": 4723.37,
+      "s1": 4528.27,
+      "week_high": 4695.0,
+      "week_low": 4499.9
+    },
+    {
+      "sym": "LICI",
+      "close": 383.25,
+      "cpr_upper": 386.8,
+      "cpr_lower": 384.43,
+      "w_pct": 0.618,
+      "r1": 393.83,
+      "s1": 375.03,
+      "week_high": 396.2,
+      "week_low": 377.4
+    },
+    {
+      "sym": "HINDALCO",
+      "close": 884.7,
+      "cpr_upper": 881.82,
+      "cpr_lower": 876.05,
+      "w_pct": 0.652,
+      "r1": 906.77,
+      "s1": 856.87,
+      "week_high": 901.0,
+      "week_low": 851.1
+    },
+    {
+      "sym": "DELHIVERY",
+      "close": 386.0,
+      "cpr_upper": 384.67,
+      "cpr_lower": 382.0,
+      "w_pct": 0.691,
+      "r1": 402.02,
+      "s1": 367.32,
+      "week_high": 399.35,
+      "week_low": 364.65
+    },
+    {
+      "sym": "IDEA",
+      "close": 11.83,
+      "cpr_upper": 11.79,
+      "cpr_lower": 11.7,
+      "w_pct": 0.704,
+      "r1": 12.28,
+      "s1": 11.29,
+      "week_high": 12.2,
+      "week_low": 11.21
+    },
+    {
+      "sym": "ABB",
+      "close": 6413.0,
+      "cpr_upper": 6389.33,
+      "cpr_lower": 6342.0,
+      "w_pct": 0.738,
+      "r1": 6667.33,
+      "s1": 6111.33,
+      "week_high": 6620.0,
+      "week_low": 6064.0
+    },
+    {
+      "sym": "TATAELXSI",
+      "close": 3790.0,
+      "cpr_upper": 3775.22,
+      "cpr_lower": 3745.65,
+      "w_pct": 0.78,
+      "r1": 3877.97,
+      "s1": 3672.47,
+      "week_high": 3848.4,
+      "week_low": 3642.9
+    },
+    {
+      "sym": "HAL",
+      "close": 4853.7,
+      "cpr_upper": 4830.48,
+      "cpr_lower": 4784.05,
+      "w_pct": 0.957,
+      "r1": 4972.53,
+      "s1": 4688.43,
+      "week_high": 4926.1,
+      "week_low": 4642.0
+    },
+    {
+      "sym": "INDUSINDBK",
+      "close": 838.0,
+      "cpr_upper": 851.1,
+      "cpr_lower": 842.37,
+      "w_pct": 1.042,
+      "r1": 861.27,
+      "s1": 823.47,
+      "week_high": 870.0,
+      "week_low": 832.2
+    },
+    {
+      "sym": "POLYCAB",
+      "close": 7787.0,
+      "cpr_upper": 7745.92,
+      "cpr_lower": 7663.75,
+      "w_pct": 1.055,
+      "r1": 8032.17,
+      "s1": 7459.67,
+      "week_high": 7950.0,
+      "week_low": 7377.5
+    },
+    {
+      "sym": "LICHSGFIN",
+      "close": 493.7,
+      "cpr_upper": 501.88,
+      "cpr_lower": 496.43,
+      "w_pct": 1.104,
+      "r1": 513.1,
+      "s1": 479.75,
+      "week_high": 518.55,
+      "week_low": 485.2
+    },
+    {
+      "sym": "ADANIENT",
+      "close": 2579.4,
+      "cpr_upper": 2562.82,
+      "cpr_lower": 2529.65,
+      "w_pct": 1.286,
+      "r1": 2661.77,
+      "s1": 2463.87,
+      "week_high": 2628.6,
+      "week_low": 2430.7
+    },
+    {
+      "sym": "EXIDEIND",
+      "close": 335.5,
+      "cpr_upper": 344.43,
+      "cpr_lower": 338.48,
+      "w_pct": 1.773,
+      "r1": 353.4,
+      "s1": 323.55,
+      "week_high": 359.35,
+      "week_low": 329.5
+    },
+    {
+      "sym": "VEDL",
+      "close": 237.9,
+      "cpr_upper": 235.34,
+      "cpr_lower": 230.23,
+      "w_pct": 2.151,
+      "r1": 243.97,
+      "s1": 226.72,
+      "week_high": 238.85,
+      "week_low": 221.6
+    }
+  ]
+}
