@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-11-06 23:19 IST",
+  "for_week": "09-Nov to 13-Nov-2026",
+  "total": 5,
+  "stocks": [
+    {
+      "sym": "MEDPLUS",
+      "close": 604.6,
+      "cpr_upper": 603.94,
+      "cpr_lower": 602.62,
+      "w_pct": 0.218,
+      "r1": 618.07,
+      "s1": 589.82,
+      "week_high": 616.75,
+      "week_low": 588.5
+    },
+    {
+      "sym": "IPCALAB",
+      "close": 1941.8,
+      "cpr_upper": 1951.6,
+      "cpr_lower": 1945.07,
+      "w_pct": 0.336,
+      "r1": 2005.47,
+      "s1": 1884.67,
+      "week_high": 2012.0,
+      "week_low": 1891.2
+    },
+    {
+      "sym": "POWERGRID",
+      "close": 259.9,
+      "cpr_upper": 261.75,
+      "cpr_lower": 260.52,
+      "w_pct": 0.475,
+      "r1": 268.97,
+      "s1": 252.07,
+      "week_high": 270.2,
+      "week_low": 253.3
+    },
+    {
+      "sym": "UBL",
+      "close": 1189.7,
+      "cpr_upper": 1207.7,
+      "cpr_lower": 1195.7,
+      "w_pct": 1.009,
+      "r1": 1234.4,
+      "s1": 1157.0,
+      "week_high": 1246.4,
+      "week_low": 1169.0
+    },
+    {
+      "sym": "ZYDUSLIFE",
+      "close": 1197.9,
+      "cpr_upper": 1219.3,
+      "cpr_lower": 1205.03,
+      "w_pct": 1.191,
+      "r1": 1252.33,
+      "s1": 1157.73,
+      "week_high": 1266.6,
+      "week_low": 1172.0
+    }
+  ]
+}
