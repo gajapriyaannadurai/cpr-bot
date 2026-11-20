@@ -3,6 +3,32 @@
   "note": "TC is always the higher of the two CPR bounds, BC the lower (inverted-day normalization applied). margin_upper/margin_lower are today_cpr.upper - tomorrow_cpr.upper and tomorrow_cpr.lower - today_cpr.lower respectively; both must be >= 0 for a genuine inside-CPR day.",
   "stocks": [
     {
+      "sym": "ADANIENT",
+      "day_yday_date": "2026-11-18",
+      "day_yday_ohlc": {
+        "H": 2748.0,
+        "L": 2666.0,
+        "C": 2684.2
+      },
+      "day_today_date": "2026-11-19",
+      "day_today_ohlc": {
+        "H": 2712.0,
+        "L": 2677.0,
+        "C": 2703.1
+      },
+      "today_cpr": {
+        "tc": 2707.0,
+        "bc": 2691.8
+      },
+      "tomorrow_cpr": {
+        "tc": 2700.23,
+        "bc": 2694.5
+      },
+      "margin_upper": 6.7666,
+      "margin_lower": 2.7,
+      "is_inside": true
+    },
+    {
       "sym": "ONGC",
       "day_yday_date": "2026-11-18",
       "day_yday_ohlc": {
@@ -26,32 +52,6 @@
       },
       "margin_upper": 0.2383,
       "margin_lower": 0.245,
-      "is_inside": true
-    },
-    {
-      "sym": "TRENT",
-      "day_yday_date": "2026-11-17",
-      "day_yday_ohlc": {
-        "H": 3262.0,
-        "L": 3155.1,
-        "C": 3176.3
-      },
-      "day_today_date": "2026-11-18",
-      "day_today_ohlc": {
-        "H": 3251.3,
-        "L": 3146.5,
-        "C": 3190.0
-      },
-      "today_cpr": {
-        "tc": 3208.55,
-        "bc": 3187.05
-      },
-      "tomorrow_cpr": {
-        "tc": 3198.9,
-        "bc": 3192.97
-      },
-      "margin_upper": 9.65,
-      "margin_lower": 5.9166,
       "is_inside": true
     },
     {
@@ -81,81 +81,55 @@
       "is_inside": true
     },
     {
-      "sym": "OBEROIRLTY",
-      "day_yday_date": "2026-11-17",
+      "sym": "JINDALSTEL",
+      "day_yday_date": "2026-11-18",
       "day_yday_ohlc": {
-        "H": 1835.0,
-        "L": 1761.7,
-        "C": 1819.7
+        "H": 1129.0,
+        "L": 1101.4,
+        "C": 1103.0
       },
-      "day_today_date": "2026-11-18",
+      "day_today_date": "2026-11-19",
       "day_today_ohlc": {
-        "H": 1822.8,
-        "L": 1792.0,
-        "C": 1800.0
+        "H": 1124.6,
+        "L": 1093.3,
+        "C": 1114.5
       },
       "today_cpr": {
-        "tc": 1812.58,
-        "bc": 1798.35
+        "tc": 1115.2,
+        "bc": 1107.07
       },
       "tomorrow_cpr": {
-        "tc": 1807.4,
-        "bc": 1802.47
+        "tc": 1112.65,
+        "bc": 1108.95
       },
-      "margin_upper": 5.1833,
-      "margin_lower": 4.1167,
+      "margin_upper": 2.55,
+      "margin_lower": 1.8833,
       "is_inside": true
     },
     {
-      "sym": "POLYMED",
-      "day_yday_date": "2026-11-17",
+      "sym": "SBFC",
+      "day_yday_date": "2026-11-18",
       "day_yday_ohlc": {
-        "H": 1687.2,
-        "L": 1640.1,
-        "C": 1649.6
+        "H": 88.01,
+        "L": 85.61,
+        "C": 85.94
       },
-      "day_today_date": "2026-11-18",
+      "day_today_date": "2026-11-19",
       "day_today_ohlc": {
-        "H": 1686.2,
-        "L": 1640.1,
-        "C": 1654.5
+        "H": 87.95,
+        "L": 84.86,
+        "C": 86.85
       },
       "today_cpr": {
-        "tc": 1663.65,
-        "bc": 1654.28
+        "tc": 86.81,
+        "bc": 86.23
       },
       "tomorrow_cpr": {
-        "tc": 1663.15,
-        "bc": 1657.38
+        "tc": 86.7,
+        "bc": 86.4
       },
-      "margin_upper": 0.5,
-      "margin_lower": 3.1,
-      "is_inside": true
-    },
-    {
-      "sym": "RBLBANK",
-      "day_yday_date": "2026-11-17",
-      "day_yday_ohlc": {
-        "H": 391.75,
-        "L": 380.0,
-        "C": 390.1
-      },
-      "day_today_date": "2026-11-18",
-      "day_today_ohlc": {
-        "H": 390.9,
-        "L": 385.0,
-        "C": 387.5
-      },
-      "today_cpr": {
-        "tc": 388.69,
-        "bc": 385.88
-      },
-      "tomorrow_cpr": {
-        "tc": 387.95,
-        "bc": 387.65
-      },
-      "margin_upper": 0.7417,
-      "margin_lower": 1.775,
+      "margin_upper": 0.1083,
+      "margin_lower": 0.175,
       "is_inside": true
     },
     {
