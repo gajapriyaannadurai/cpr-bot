@@ -1,0 +1,117 @@
+{
+  "generated_at": "2026-11-23 09:04 IST",
+  "for_week": "23-Nov to 27-Nov-2026",
+  "total": 10,
+  "stocks": [
+    {
+      "sym": "ABB",
+      "close": 6934.5,
+      "cpr_upper": 6932.5,
+      "cpr_lower": 6928.5,
+      "w_pct": 0.058,
+      "r1": 7111.0,
+      "s1": 6754.0,
+      "week_high": 7107.0,
+      "week_low": 6750.0
+    },
+    {
+      "sym": "ALKEM",
+      "close": 5185.0,
+      "cpr_upper": 5182.5,
+      "cpr_lower": 5177.5,
+      "w_pct": 0.096,
+      "r1": 5264.0,
+      "s1": 5101.0,
+      "week_high": 5259.0,
+      "week_low": 5096.0
+    },
+    {
+      "sym": "ZYDUSLIFE",
+      "close": 1200.0,
+      "cpr_upper": 1199.1,
+      "cpr_lower": 1197.3,
+      "w_pct": 0.15,
+      "r1": 1215.3,
+      "s1": 1182.9,
+      "week_high": 1213.5,
+      "week_low": 1181.1
+    },
+    {
+      "sym": "GRASIM",
+      "close": 3103.7,
+      "cpr_upper": 3091.7,
+      "cpr_lower": 3067.7,
+      "w_pct": 0.773,
+      "r1": 3147.3,
+      "s1": 3036.1,
+      "week_high": 3123.3,
+      "week_low": 3012.1
+    },
+    {
+      "sym": "RAMCOCEM",
+      "close": 836.65,
+      "cpr_upper": 833.41,
+      "cpr_lower": 826.92,
+      "w_pct": 0.775,
+      "r1": 852.48,
+      "s1": 814.33,
+      "week_high": 846.0,
+      "week_low": 807.85
+    },
+    {
+      "sym": "BHEL",
+      "close": 433.65,
+      "cpr_upper": 431.78,
+      "cpr_lower": 428.05,
+      "w_pct": 0.861,
+      "r1": 441.73,
+      "s1": 421.83,
+      "week_high": 438.0,
+      "week_low": 418.1
+    },
+    {
+      "sym": "INDUSTOWER",
+      "close": 387.0,
+      "cpr_upper": 392.48,
+      "cpr_lower": 388.83,
+      "w_pct": 0.943,
+      "r1": 398.85,
+      "s1": 378.8,
+      "week_high": 402.5,
+      "week_low": 382.45
+    },
+    {
+      "sym": "POLYMED",
+      "close": 1635.7,
+      "cpr_upper": 1663.2,
+      "cpr_lower": 1644.87,
+      "w_pct": 1.121,
+      "r1": 1677.47,
+      "s1": 1612.27,
+      "week_high": 1695.8,
+      "week_low": 1630.6
+    },
+    {
+      "sym": "BPCL",
+      "close": 314.1,
+      "cpr_upper": 311.77,
+      "cpr_lower": 307.1,
+      "w_pct": 1.486,
+      "r1": 318.77,
+      "s1": 304.77,
+      "week_high": 314.1,
+      "week_low": 300.1
+    },
+    {
+      "sym": "POLICYBZR",
+      "close": 1022.8,
+      "cpr_upper": 1045.9,
+      "cpr_lower": 1030.5,
+      "w_pct": 1.506,
+      "r1": 1106.0,
+      "s1": 955.0,
+      "week_high": 1121.4,
+      "week_low": 970.4
+    }
+  ]
+}
