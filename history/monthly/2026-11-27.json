@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-10-30 22:30 IST",
+  "for_month": "November 2026",
+  "total": 5,
+  "stocks": [
+    {
+      "sym": "BERGEPAINT",
+      "close": 465.1,
+      "cpr_upper": 464.68,
+      "cpr_lower": 463.82,
+      "w_pct": 0.183,
+      "r1": 483.2,
+      "s1": 446.15,
+      "month_high": 482.35,
+      "month_low": 445.3
+    },
+    {
+      "sym": "KPITTECH",
+      "close": 530.25,
+      "cpr_upper": 527.08,
+      "cpr_lower": 520.75,
+      "w_pct": 1.194,
+      "r1": 577.73,
+      "s1": 476.43,
+      "month_high": 571.4,
+      "month_low": 470.1
+    },
+    {
+      "sym": "SHREECEM",
+      "close": 22995.0,
+      "cpr_upper": 22837.5,
+      "cpr_lower": 22522.5,
+      "w_pct": 1.37,
+      "r1": 24005.0,
+      "s1": 21670.0,
+      "month_high": 23690.0,
+      "month_low": 21355.0
+    },
+    {
+      "sym": "HDFCLIFE",
+      "close": 524.9,
+      "cpr_upper": 536.95,
+      "cpr_lower": 528.92,
+      "w_pct": 1.53,
+      "r1": 557.82,
+      "s1": 500.02,
+      "month_high": 565.85,
+      "month_low": 508.05
+    },
+    {
+      "sym": "UBL",
+      "close": 1180.3,
+      "cpr_upper": 1223.0,
+      "cpr_lower": 1194.53,
+      "w_pct": 2.412,
+      "r1": 1288.93,
+      "s1": 1100.13,
+      "month_high": 1317.4,
+      "month_low": 1128.6
+    }
+  ]
+}
